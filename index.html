@@ -1,0 +1,697 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>[hidden]{display:none!important}body{margin:0}img{max-width:100%}</style></head><body><title>Scan-Rundgang</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: eine Spalte für das Handy – oben Rundgang, Mitte aktuelle Einheit mit Scans, unten feste Scan-Leiste. Farben der Orts-Codes wie im Plan (Prozess blau, Lager innen violett, außen grün). */
+:root{
+  --bg:#e9edf0; --surface:#ffffff; --surface2:#f4f6f8; --ink:#15202b; --muted:#5a6672; --line:#c8d0d7;
+  --accent:#c4471a; --accent-ink:#ffffff; --accent-soft:#fbe6dc;
+  --proz:#0b4f9c; --lagi:#7b2d8e; --ext:#3f6f17; --neu:#6b5b2b;
+  --ok:#2f7d32; --warn:#9a6700; --warn-soft:#fff3cd; --err:#b42318; --err-soft:#fde4e1;
+  --f-ui:"Barlow Semi Condensed","Roboto Condensed","Arial Narrow",Arial,sans-serif;
+  --f-code:"JetBrains Mono",ui-monospace,"Roboto Mono",Consolas,monospace;
+  --r:10px;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#11161b; --surface:#1a2129; --surface2:#222b35; --ink:#e5eaee; --muted:#97a3ae; --line:#323d48;
+  --accent:#f07b42; --accent-ink:#1a0d06; --accent-soft:#3b2318;
+  --proz:#79abee; --lagi:#c993dc; --ext:#94c862; --neu:#d3bd7c;
+  --ok:#73c27a; --warn:#e3b341; --warn-soft:#3a2f12; --err:#f2857a; --err-soft:#3d1c19; color-scheme:dark }}
+:root[data-theme="dark"]{
+  --bg:#11161b; --surface:#1a2129; --surface2:#222b35; --ink:#e5eaee; --muted:#97a3ae; --line:#323d48;
+  --accent:#f07b42; --accent-ink:#1a0d06; --accent-soft:#3b2318;
+  --proz:#79abee; --lagi:#c993dc; --ext:#94c862; --neu:#d3bd7c;
+  --ok:#73c27a; --warn:#e3b341; --warn-soft:#3a2f12; --err:#f2857a; --err-soft:#3d1c19; color-scheme:dark }
+*{box-sizing:border-box}
+html,body{background:var(--bg)}
+body{color:var(--ink);font-family:var(--f-ui);font-size:17px;line-height:1.35;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 290px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+h1,h2,h3{margin:0;text-wrap:balance;font-weight:700}
+h1{font-size:26px;letter-spacing:.2px}
+h2{font-size:20px}
+.eyebrow{font-size:13px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:600}
+.muted{color:var(--muted)}
+.code{font-family:var(--f-code);font-weight:500;font-variant-numeric:tabular-nums}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:10px 14px;min-height:44px;font-weight:600}
+button:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+button.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+button.ghost{background:transparent}
+button.danger{color:var(--err);border-color:var(--err)}
+button.small{min-height:34px;padding:5px 10px;font-size:15px}
+button[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+input,textarea{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 12px;min-height:44px;width:100%}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:14px;color:var(--muted);font-weight:600}
+label.f>input,label.f>textarea{color:var(--ink);font-size:17px;font-weight:400}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:10px;min-width:0}
+
+/* Kopf */
+header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:12px 10px;border-bottom:1px solid var(--line)}
+header.top .wrap{flex-direction:row;align-items:center;justify-content:space-between;gap:10px}
+.runinfo{min-width:0;flex:1}
+header.top .row{flex-wrap:nowrap;flex-shrink:0}
+.runinfo .t{font-size:19px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Orts-Code-Plakette */
+.tag{display:inline-flex;align-items:center;gap:6px;font-family:var(--f-code);font-weight:700;font-size:15px;padding:3px 8px;border-radius:6px;border:1.5px solid currentColor;white-space:nowrap}
+.tag.proz{color:var(--proz)} .tag.lagi{color:var(--lagi)} .tag.ext{color:var(--ext)} .tag.neu{color:var(--neu)}
+.chip{display:inline-flex;align-items:center;gap:4px;font-size:14px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--surface2);border:1px solid var(--line)}
+.chip.x{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+.chip.warn{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+.chip.akt{font-family:var(--f-code);font-size:13px}
+
+/* Ort-Liste */
+.ort{border:1px solid var(--line);border-radius:var(--r);background:var(--surface);overflow:hidden}
+.ort>.oh{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface2);border-bottom:1px solid var(--line)}
+.ort>.oh .tm{margin-left:auto;font-size:14px;color:var(--muted)}
+.unit{padding:10px 12px;display:flex;flex-direction:column;gap:8px;border-bottom:1px solid var(--line)}
+.unit:last-child{border-bottom:0}
+.unit.cur{box-shadow:inset 4px 0 0 var(--accent)}
+.uh{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.uh .ty{font-weight:700;font-size:18px}
+.uh .px{font-family:var(--f-code);font-weight:700;font-size:16px;padding:1px 7px;border-radius:5px;background:var(--accent-soft);color:var(--accent)}
+.uh .px.none{background:var(--surface2);color:var(--muted);font-weight:500}
+.uh .sum{margin-left:auto;font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
+.lines{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.ln{display:grid;grid-template-columns:1fr auto;gap:4px 8px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);min-width:0}
+.ln.new{animation:flash 1.2s ease-out}
+@keyframes flash{from{background:var(--accent-soft)}to{background:var(--surface)}}
+.ln .main{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;min-width:0;cursor:pointer}
+.ln .rm{font-family:var(--f-code);font-weight:700;font-size:17px}
+.ln .tl{font-weight:600}
+.ln .tl.empty{color:var(--muted);font-weight:400;font-style:italic}
+.ln .meta{grid-column:1/-1;display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:14px}
+.ln .hint{grid-column:1/-1;font-size:14px;color:var(--muted);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ln.soft{background:var(--surface2)}
+.xbtn{min-height:40px;min-width:48px;padding:4px 10px;font-family:var(--f-code);font-weight:700}
+.prev{border:1px dashed var(--line);border-radius:8px;padding:8px 10px;font-size:15px;display:flex;flex-direction:column;gap:6px}
+
+/* Untere Leiste */
+.dock{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);
+  padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.dock .wrap{gap:8px}
+.dock .scanrow{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.dock .scanrow button{min-height:54px;font-size:18px}
+.dock .entry{display:grid;grid-template-columns:1fr auto;gap:8px}
+.dock .entry input{font-family:var(--f-code);font-size:18px}
+.dock .acts{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.dock .acts button{padding:5px 4px}
+.dock .ctx{font-size:14px;color:var(--muted);display:flex;gap:6px;align-items:center;flex-wrap:wrap;min-width:0}
+
+/* Blätter (Overlays) */
+.scrim{position:fixed;inset:0;z-index:20;background:rgba(10,14,18,.45);display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--bg);width:100%;max-width:680px;max-height:92vh;overflow:auto;border-radius:16px 16px 0 0;
+  padding:16px max(16px,env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:12px}
+.sheet .sh{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.seg button{flex:1;border:0;border-radius:0;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.keys{display:grid;gap:6px}
+.keys.c4{grid-template-columns:repeat(4,1fr)} .keys.c5{grid-template-columns:repeat(5,1fr)} .keys.c3{grid-template-columns:repeat(3,1fr)} .keys.c8{grid-template-columns:repeat(8,1fr)}
+.keys button{padding:6px 4px;min-height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;line-height:1.1}
+.keys button .k{font-family:var(--f-code);font-weight:700;font-size:16px}
+.keys button .d{font-size:11.5px;color:var(--muted);font-weight:500;text-align:center}
+.keys button[aria-pressed="true"] .k,.keys button[aria-pressed="true"] .d{color:inherit}
+.keys.proz button .k{color:var(--proz)} .keys.lagi button .k{color:var(--lagi)} .keys.ext button .k{color:var(--ext)}
+.preview{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+
+/* Start */
+.runcard{display:grid;grid-template-columns:1fr auto;gap:6px 10px;align-items:center}
+.runcard .stats{grid-column:1/-1;font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
+.banner{border-radius:8px;padding:10px 12px;font-size:15px}
+.banner.warn{background:var(--warn-soft);color:var(--warn)}
+.banner.err{background:var(--err-soft);color:var(--err)}
+.toast{position:fixed;left:50%;transform:translateX(-50%);top:calc(76px + env(safe-area-inset-top,0px));z-index:40;max-width:min(560px,calc(100% - 32px));
+  background:var(--ink);color:var(--surface);padding:10px 14px;border-radius:10px;font-weight:600;box-shadow:0 6px 24px rgba(0,0,0,.25)}
+.toast.err{background:var(--err);color:#fff}
+.toast.warn{background:var(--warn);color:#fff}
+textarea.csv{font-family:var(--f-code);font-size:12px;min-height:180px;white-space:pre;overflow:auto}
+video{width:100%;border-radius:10px;background:#000;max-height:55vh;object-fit:cover}
+details>summary{cursor:pointer;font-weight:600}
+@media (max-width:420px){ .keys.c8{grid-template-columns:repeat(4,1fr)} .keys.c5{grid-template-columns:repeat(4,1fr)} }
+@media (prefers-reduced-motion:reduce){ .ln.new{animation:none} }
+</style>
+
+<div id="app"></div>
+<input type="file" id="photo" accept="image/*" capture="environment" hidden>
+<input type="file" id="gallery" accept="image/*" hidden>
+<input type="file" id="jsonin" accept="application/json,.json" hidden>
+<datalist id="teileList"></datalist>
+
+<script>
+/* ===== Stammdaten ===== */
+const TEILE = [];   // [Teil kurz, Bezeichnung, Anzahl] aus Stuecklisten_P30962_alle_Plaene.csv
+const TEIL_SET = new Set(TEILE.map(t=>t[0]));
+const inSL = t=>!TEILE.length || TEIL_SET.has(t);
+const PROZ = [['LA','Laser'],['ZS','Zuschneiden'],['KAK','Kanten klein'],['KAG','Kanten groß'],['PRM','Prägen man.'],['PRA','Prägen auto'],['RO','Rollen'],['LS','Längsnaht'],
+  ['SWB1','53035'],['SWB2','53028'],['SWB3','Container'],['FA','Färben'],
+  ['SWD1','53037'],['SWD2','53023'],['SWD3','53016'],['SWD4','53016'],['SWD5','53016'],['SWD6','53016'],['SWD7','53018'],['SWD8','Längsschw. 2'],
+  ['LT','Lagerturm'],['SL','Schleifen'],['BZ','Beizen'],['EX','Expedit'],['VS','Versand'],['MAG','Magazin']];
+const ZONEN = [['116C-VB','Vorb. Beizen'],['116C-PU','Puffer'],['116C-SH','Shiner'],['116C-L1','Lager 1']];
+const HR = ['HRE1','HRE2','HRF1','HRF2','HRG1','HRG2','HRG3'];
+const EXTN = {A:14,B:12,C:9,D:8,E:6,F:6,G:12,H:6};
+const TYPEN = [['K','klein 80×60'],['E','Euro 120×80'],['3M','3 m'],['6M','6 m'],['WA','Wagen'],['KR','Regal mobil'],['BOD','Boden'],['SONST','Sonstiges']];
+const KEY = 'scanRundgangP30962.v1';
+const ZXING_URL = 'https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js';
+
+/* ===== Zustand ===== */
+let S, storageOk = true;
+function blank(){
+  const t0 = new Date(2026,9,23,7,30,0).getTime();
+  return { v:1,
+    register:{},
+    rundgaenge:[{ id:'R-BEISPIEL', beispiel:true, start:t0, end:t0+6*60000, orte:[
+      { id:'o1', code:'EXT B7', zeit:t0+60000, einheiten:[
+        { id:'u1', nr:'U01', typ:'6M', pxx:'', gesamt:'3', lage:'', bem:'Beispiel', zeit:t0+60000, ohne:[], fremd:[], teile:[
+          {id:'t1',zeit:t0+70000,barcode:'274620',rmnr:'274620',teil:'100-8',met:'',mgz:'',x:false,bem:'',quelle:'Scan',akt:[]},
+          {id:'t2',zeit:t0+80000,barcode:'274748',rmnr:'274748',teil:'110-1F.1',met:'',mgz:'',x:false,bem:'',quelle:'Scan',akt:[]},
+          {id:'t3',zeit:t0+90000,barcode:'274720',rmnr:'274720',teil:'100-6',met:'',mgz:'',x:true,bem:'',quelle:'Scan',akt:[{akvp:'0030',barcode:'2747200030',zeit:t0+95000}]}
+        ]}]}]}],
+    cur:null };
+}
+function load(){
+  try{ const s = localStorage.getItem(KEY); S = s ? JSON.parse(s) : blank(); }
+  catch(e){ storageOk=false; S = blank(); }
+  if(!S.register) S.register={};
+}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); storageOk=true; }catch(e){ storageOk=false; } }
+
+/* ===== Hilfen ===== */
+const $ = s=>document.querySelector(s);
+const esc = s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = ()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const p2 = n=>String(n).padStart(2,'0');
+const fDate = t=>{const d=new Date(t);return `${p2(d.getDate())}.${p2(d.getMonth()+1)}.${d.getFullYear()}`};
+const fDM = t=>{const d=new Date(t);return `${p2(d.getDate())}.${p2(d.getMonth()+1)}.`};
+const fHM = t=>{const d=new Date(t);return `${p2(d.getHours())}:${p2(d.getMinutes())}`};
+const fHMS = t=>{const d=new Date(t);return `${fHM(t)}:${p2(d.getSeconds())}`};
+const fFile = t=>{const d=new Date(t);return `${d.getHours()}h${p2(d.getMinutes())}`};
+function codeClass(c){ if(/^EXT/.test(c)) return 'ext'; if(/^NEU/.test(c)) return 'neu'; if(/^ZONE/.test(c)) return 'proz';
+  const k=c.replace('INT ',''); if(PROZ.some(p=>p[0]===k)) return 'proz'; return 'lagi'; }
+function bereich(c){ if(/^EXT/.test(c)) return 'EXT'; if(/^NEU/.test(c)) return 'NEU'; if(/^ZONE/.test(c)) return 'INT Prozess';
+  const k=c.replace('INT ',''); if(PROZ.some(p=>p[0]===k)) return 'INT Prozess'; if(/^HR/.test(k)) return 'INT Hochregal'; return 'INT Lager'; }
+const tagHTML = c=>`<span class="tag ${codeClass(c)}">${esc(c)}</span>`;
+const run = ()=>S.rundgaenge.find(r=>r.id===S.cur?.rid);
+const ortOf = (r,id)=>r?.orte.find(o=>o.id===id);
+function curUnit(){ const r=run(); const o=ortOf(r,S.cur?.oid); return o?.einheiten.find(u=>u.id===S.cur?.uid); }
+function curOrt(){ return ortOf(run(),S.cur?.oid); }
+function allUnits(r){ const out=[]; r.orte.forEach(o=>o.einheiten.forEach(u=>out.push([o,u]))); return out; }
+function nextNr(r){ return 'U'+p2(allUnits(r).length+1); }
+
+/* ===== Rückmeldung ===== */
+let AC=null, toastT=null;
+function beep(ok=true){
+  try{ AC = AC || new (window.AudioContext||window.webkitAudioContext)();
+    const o=AC.createOscillator(), g=AC.createGain(); o.frequency.value = ok?1320:330; o.type='square';
+    g.gain.value=.06; o.connect(g); g.connect(AC.destination); o.start(); o.stop(AC.currentTime+(ok?.07:.22)); }catch(e){}
+  try{ navigator.vibrate && navigator.vibrate(ok?40:[70,50,70]); }catch(e){}
+}
+function toast(msg,kind=''){
+  let t=$('#toast'); if(!t){ t=document.createElement('div'); t.id='toast'; document.body.appendChild(t); }
+  t.className='toast '+kind; t.textContent=msg; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>t.hidden=true, kind==='err'?4500:2600);
+}
+
+/* ===== Verlauf: wo war ein RMNr zuletzt? ===== */
+function lastSeen(rmnr, exceptUnitId){
+  let best=null;
+  for(const r of S.rundgaenge){ if(r.beispiel) continue;
+    for(const o of r.orte) for(const u of o.einheiten){ if(u.id===exceptUnitId) continue;
+      for(const t of u.teile) if(t.rmnr===rmnr && (!best || t.zeit>best.zeit)) best={zeit:t.zeit, ort:o.code, pxx:u.pxx, nr:u.nr, rid:r.id}; } }
+  return best;
+}
+function lastByPxx(pxx, exceptRid){
+  let best=null;
+  for(const r of S.rundgaenge){ if(r.id===exceptRid || r.beispiel) continue;
+    for(const o of r.orte) for(const u of o.einheiten) if(u.pxx && u.pxx.toUpperCase()===pxx.toUpperCase() && (!best||u.zeit>best.u.zeit)) best={r,o,u}; }
+  return best;
+}
+function lastAtOrt(code, exceptRid){
+  const res=[]; let rbest=null;
+  for(const r of S.rundgaenge){ if(r.id===exceptRid || r.beispiel) continue; if(r.orte.some(o=>o.code===code) && (!rbest||r.start>rbest.start)) rbest=r; }
+  if(rbest) rbest.orte.filter(o=>o.code===code).forEach(o=>o.einheiten.forEach(u=>res.push({r:rbest,o,u})));
+  return res;
+}
+function recentOrte(){ const seen=[]; const all=[];
+  S.rundgaenge.forEach(r=>{ if(!r.beispiel) r.orte.forEach(o=>all.push(o)); }); all.sort((a,b)=>b.zeit-a.zeit);
+  for(const o of all){ if(!seen.includes(o.code)) seen.push(o.code); if(seen.length>=8) break; } return seen; }
+
+/* ===== Scan-Verarbeitung ===== */
+function handleCode(raw, quelle='Scan'){
+  const u=curUnit();
+  if(!u){ beep(false); toast('Zuerst Ort und Einheit wählen.','err'); return false; }
+  const txt=String(raw).trim(); if(!txt) return false;
+  const digits=txt.replace(/\D/g,'');
+  // Teil-Nr. von Hand (z. B. 100-S22) statt RMNr
+  if(/[A-Za-z]|-/.test(txt) && !/^\d+$/.test(txt)){
+    const teil=normTeil(txt);
+    if(u.teile.some(t=>!t.rmnr && t.teil===teil)){ beep(false); toast(`${teil} ist schon in dieser Einheit.`,'warn'); return false; }
+    addTeil(u,{barcode:'',rmnr:'',teil,quelle:'Hand'});
+    beep(true); toast(`${teil} von Hand erfasst${inSL(teil)?'':' – nicht in Stückliste'}`, inSL(teil)?'':'warn'); return true;
+  }
+  if(digits.length===10){
+    const rm=digits.slice(0,6), ak=digits.slice(6);
+    const last=[...u.teile].filter(t=>t.rmnr).sort((a,b)=>b.zeit-a.zeit)[0];
+    if(!last){ beep(false); toast('Aktivität ohne Teil: zuerst die RMNr scannen.','err'); return false; }
+    if(last.rmnr!==rm){ beep(false); toast(`Aktivität passt nicht zum letzten Teil (${last.rmnr}). Zuerst ${rm} scannen.`,'err'); return false; }
+    if(last.akt.some(a=>a.akvp===ak)){ beep(false); toast(`Aktivität ${ak} schon erfasst.`,'warn'); return false; }
+    last.akt.push({akvp:ak, barcode:digits, zeit:Date.now(), quelle});
+    save(); render(); flashLine(last.id); beep(true); toast(`Aktivität ${ak} → ${rm}`); return true;
+  }
+  if(!digits){ beep(false); toast('Kein Code erkannt.','err'); return false; }
+  if(u.teile.some(t=>t.rmnr===digits)){ beep(false); toast(`${digits} ist schon in dieser Einheit.`,'warn'); return false; }
+  const odd = digits.length!==6;
+  addTeil(u,{barcode:digits, rmnr:digits, teil:S.register[digits]||'', quelle, bem: odd?`Code mit ${digits.length} Stellen – prüfen`:''});
+  beep(!odd); if(odd) toast(`Ungewöhnliche Länge (${digits.length} Stellen) – bitte prüfen.`,'warn');
+  return true;
+}
+function normTeil(s){ let t=s.trim().replace(/^P30962-MZB-/i,'').replace(/\s+/g,'-').toUpperCase(); t=t.replace(/^(\d{3})-?/, '$1-');
+  const hit=TEILE.find(x=>x[0].toUpperCase()===t); return hit?hit[0]:t; }
+function addTeil(u,o){
+  const t={id:uid(), zeit:Date.now(), barcode:o.barcode||'', rmnr:o.rmnr||'', teil:o.teil||'', met:o.met||'', mgz:o.mgz||'', x:!!o.x, bem:o.bem||'', quelle:o.quelle||'Scan', akt:[]};
+  u.teile.push(t); save(); render(); flashLine(t.id); return t;
+}
+function flashLine(id){ const el=document.querySelector(`[data-line="${id}"]`); if(el){ el.classList.remove('new'); void el.offsetWidth; el.classList.add('new'); el.scrollIntoView({block:'nearest'}); } }
+
+/* ===== Foto-Scan ===== */
+/* Eigener Code-39-Leser (Etiketten: *274737*). Liest viele waagrechte Linien, 0° und 90°, Mehrheitsentscheid. */
+const C39 = (()=>{
+  const ENC = {'0':0x034,'1':0x121,'2':0x061,'3':0x160,'4':0x031,'5':0x130,'6':0x070,'7':0x025,'8':0x124,'9':0x064,
+    'A':0x109,'B':0x049,'C':0x148,'D':0x019,'E':0x118,'F':0x058,'G':0x00D,'H':0x10C,'I':0x04C,'J':0x01C,'K':0x103,'L':0x043,'M':0x142,
+    'N':0x013,'O':0x112,'P':0x052,'Q':0x007,'R':0x106,'S':0x046,'T':0x016,'U':0x181,'V':0x0C1,'W':0x1C0,'X':0x091,'Y':0x190,'Z':0x0D0,
+    '-':0x085,'.':0x184,' ':0x0C4,'$':0x0A8,'/':0x0A2,'+':0x08A,'%':0x02A,'*':0x094};
+  const DEC = {}; for(const k in ENC) DEC[ENC[k]] = k;
+  function bits(w){ // 9 Breiten -> 9-Bit-Muster, die 3 breitesten = 1
+    const idx=[...w.keys()].sort((a,b)=>w[b]-w[a]);
+    const wideMin=w[idx[2]], narrowMax=w[idx[3]];
+    if(wideMin < narrowMax*1.5) return -1;          // kein klarer Unterschied breit/schmal
+    let v=0; for(let i=0;i<9;i++) v = (v<<1) | (w[i]>=wideMin?1:0); return v;
+  }
+  function decodeRuns(r){ // r[0] = dunkel
+    const out=[];
+    for(let i=0;i+9<=r.length;i+=2){
+      if(DEC[bits(r.slice(i,i+9))]!=='*') continue;
+      const unit=r.slice(i,i+9).reduce((a,b)=>a+b,0)/12;   // 12 Module je Zeichen (3 breit à ~2,5)
+      let j=i+10, s='';
+      while(j+9<=r.length){
+        const gap=r[j-1]; if(gap>unit*4) break;
+        const c=DEC[bits(r.slice(j,j+9))]; if(c===undefined) break;
+        if(c==='*'){ if(s.length) out.push(s); break; }
+        s+=c; j+=10;
+      }
+    }
+    return out;
+  }
+  function runsOf(line){ // line: Grauwerte -> Lauflängen ab erstem dunklen Lauf
+    const n=line.length, w=Math.max(15,Math.round(n/25)), th=new Float32Array(n);
+    for(let i=0;i<n;i++){ let mn=255,mx=0; for(let k=Math.max(0,i-w);k<Math.min(n,i+w);k+=2){ const v=line[k]; if(v<mn)mn=v; if(v>mx)mx=v; }
+      th[i] = (mx-mn<35) ? -1 : (mn+mx)/2; }
+    const r=[]; let cur=null, len=0;
+    for(let i=0;i<n;i++){ const d = th[i]>=0 && line[i]<th[i]; if(cur===null){ if(!d) continue; cur=true; len=0; }
+      if(d===cur) len++; else { r.push(len); cur=d; len=1; } }
+    if(len) r.push(len); return r;
+  }
+  function clean(r0,f){ // weiße Streifen in Balken (Druckfehler) und Punkte entfernen: sehr kurze Läufe mit Nachbarn verschmelzen
+    const r=r0.slice(); if(r.length<12) return r;
+    const med=[...r].sort((a,b)=>a-b)[Math.floor(r.length/2)], lim=Math.max(2,med*f);
+    for(let guard=0;guard<r.length;guard++){
+      let mi=-1, mv=1e9; for(let i=1;i<r.length-1;i++) if(r[i]<mv){ mv=r[i]; mi=i; }
+      if(mi<0||mv>=lim) break;
+      r.splice(mi-1,3,r[mi-1]+r[mi]+r[mi+1]);
+    }
+    return r;
+  }
+  function scan(gray,W,H,vertical){
+    const votes={}, L=vertical?H:W, M=vertical?W:H, line=new Uint8Array(L);
+    const N=90;
+    for(let s=1;s<N;s++){ const m=Math.round(M*s/N);
+      for(let i=0;i<L;i++){ let a=0; for(let q=-1;q<=1;q++){ const mm=Math.min(M-1,Math.max(0,m+q)); a+= vertical? gray[i*W+mm] : gray[mm*W+i]; } line[i]=a/3; }
+      const raw=runsOf(line);
+      for(const f of [0,0.3,0.45,0.6]){ const r=f?clean(raw,f):raw;
+        for(const rr of [r, r.slice().reverse().slice(r.length%2===0?1:0)])
+          for(const t of decodeRuns(rr)) votes[t]=(votes[t]||0)+1; }
+    }
+    return votes;
+  }
+  function decodeCanvas(c){
+    const g=c.getContext('2d',{willReadFrequently:true}); const {width:W,height:H}=c; const d=g.getImageData(0,0,W,H).data;
+    const gray=new Uint8Array(W*H); for(let i=0,p=0;i<W*H;i++,p+=4) gray[i]=(d[p]*77+d[p+1]*150+d[p+2]*29)>>8;
+    const v={...scan(gray,W,H,false)}; const v2=scan(gray,W,H,true); for(const k in v2) v[k]=(v[k]||0)+v2[k];
+    return Object.entries(v).sort((a,b)=>(/^\d{6}(\d{4})?$/.test(b[0])-/^\d{6}(\d{4})?$/.test(a[0]))||b[1]-a[1]).map(e=>e[0]);
+  }
+  return {decodeCanvas};
+})();
+
+let detector=null;
+async function getDetector(){
+  if(detector) return detector;
+  if('BarcodeDetector' in window){ try{ detector=new BarcodeDetector(); return detector; }catch(e){} }
+  return null;
+}
+function loadScript(src){ return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=rej; document.head.appendChild(s); }); }
+let lastEngine='', lastSize='';
+function scaled(src,w,h,max,rot){ const k=Math.min(1,max/Math.max(w,h)); const W=Math.round(w*k),H=Math.round(h*k);
+  const c=document.createElement('canvas'); c.width=rot?H:W; c.height=rot?W:H; const g=c.getContext('2d',{willReadFrequently:true});
+  if(rot){ g.translate(H,0); g.rotate(Math.PI/2); } g.drawImage(src,0,0,W,H); return c; }
+async function decodeFile(file){
+  let bmp; try{ bmp=await createImageBitmap(file); }catch(e){ lastEngine='Bild nicht lesbar'; return []; }
+  const w=bmp.width,h=bmp.height; lastSize=`${w}×${h}`;
+  lastEngine='Code 39';
+  for(const max of [1600,1000,2400,4096,700]){ const res=C39.decodeCanvas(scaled(bmp,w,h,max,false)); if(res.length) return [res[0]]; }
+  const det=await getDetector();
+  if(det){ lastEngine+=' + BarcodeDetector';
+    for(const src of [bmp,scaled(bmp,w,h,1600,false),scaled(bmp,w,h,1000,false)]){
+      try{ const r=await det.detect(src); if(r.length) return r.map(x=>x.rawValue); }catch(e){} } }
+  try{ if(!window.ZXing) await loadScript(ZXING_URL); }catch(e){ lastEngine+=' + ZXing nicht geladen (offline?)'; return []; }
+  lastEngine+=' + ZXing';
+  const Z=window.ZXing, hints=new Map(); hints.set(Z.DecodeHintType.TRY_HARDER,true);
+  const reader=new Z.MultiFormatReader(); reader.setHints(hints);
+  for(const max of [1600,1000,2400,700]) for(const rot of [false,true]){
+    try{ const c=scaled(bmp,w,h,max,rot); const lum=new Z.HTMLCanvasElementLuminanceSource(c);
+      for(const Bin of [Z.HybridBinarizer,Z.GlobalHistogramBinarizer]){
+        try{ const res=reader.decode(new Z.BinaryBitmap(new Bin(lum)),hints); if(res) return [res.getText()]; }catch(e){} } }catch(e){} }
+  return [];
+}
+async function onPhoto(e){
+  const f=e.target.files[0]; e.target.value=''; if(!f) return;
+  toast('Lese Code …');
+  const codes=(await decodeFile(f)).map(c=>c.trim()).filter(Boolean);
+  if(!codes.length){ beep(false); toast(`Kein Code gefunden (${lastEngine}, Bild ${lastSize}). Strich-Code quer, scharf, Etikett etwa halbe Bildbreite – oder Nummer eintippen.`,'err'); return; }
+  codes.sort((a,b)=>a.replace(/\D/g,'').length-b.replace(/\D/g,'').length);
+  let n=0; for(const c of [...new Set(codes)]) if(handleCode(c,'Scan')) n++;
+  if(n>1) toast(`${n} Codes übernommen`);
+}
+$('#photo').addEventListener('change',onPhoto); $('#gallery').addEventListener('change',onPhoto);
+
+/* ===== Live-Scan ===== */
+let stream=null, liveTimer=null, liveLast={code:'',t:0};
+async function startLive(){
+  const det=await getDetector();
+  if(!window.isSecureContext||!navigator.mediaDevices){ toast('Live-Scan geht nur, wenn die Seite über https geöffnet ist (nicht als Datei vom Handy).','err'); return; }
+  try{ stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1920}}}); }
+  catch(e){ toast(`Kamera abgelehnt (${e.name||'Fehler'}). In Chrome: Schloss-Symbol → Berechtigungen → Kamera erlauben.`,'err'); return; }
+  openSheet('live'); const v=$('#vid'); v.srcObject=stream; await v.play().catch(()=>{});
+  const tick=async()=>{ if(!stream) return;
+    try{ let codes=[];
+      if(v.videoWidth){ const c=scaled(v,v.videoWidth,v.videoHeight,1280,false); codes=C39.decodeCanvas(c).slice(0,1);
+        if(!codes.length && det){ const r=await det.detect(v); codes=r.map(x=>x.rawValue); } }
+      const now=Date.now();
+      codes.sort((a,b)=>a.length-b.length).forEach(c=>{
+        if(c===liveLast.code && now-liveLast.t<2500) return; liveLast={code:c,t:now};
+        const ok=handleCode(c,'Scan'); const st=$('#liveStat'); if(st) st.textContent=(ok?'✓ ':'✗ ')+c; renderLiveCtx(); }); }catch(e){}
+    liveTimer=setTimeout(tick,250); };
+  tick();
+}
+function stopLive(){ clearTimeout(liveTimer); if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; } }
+
+/* ===== Speichern / Export ===== */
+let dl=null; (async()=>{ try{ if(window.claude?.use) dl=await claude.use('downloads'); }catch(e){} })();
+async function saveFile(name, text, mime){
+  if(dl){ try{ await dl.save({filename:name, data:text}); toast('Gespeichert: '+name); return true; }
+    catch(e){ if(e?.code==='declined') { toast('Speichern abgebrochen.','warn'); return false; } } }
+  if(!window.claude){ try{ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type:mime})); a.download=name; document.body.appendChild(a); a.click(); a.remove(); toast('Gespeichert: '+name); return true; }catch(e){} }
+  toast('Speichern hier nicht möglich – Text kopieren.','warn'); return false;
+}
+const COLS=['Rundgang','Zeit','Ort','Bereich','Einheit-Nr','Einheit-Typ','Pxx','Gesamt gezählt','Lage','Art','Barcode','RMNr','AkvP','Teil','Menge Etikett','Menge gezählt','Versand (x)','Bemerkung','Quelle'];
+const csvCell = v=>{ v=String(v??''); return /[;"\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; };
+function csvFor(runs){
+  const L=[COLS.join(';')];
+  for(const r of runs){ const rn=runName(r);
+    for(const o of r.orte) for(const u of o.einheiten){
+      const base=[rn,null,o.code,bereich(o.code),u.nr,u.typ,u.pxx,u.gesamt,u.lage];
+      const row=(zeit,art,rest)=>{ const b=[...base]; b[1]=fDate(zeit)+' '+fHMS(zeit); L.push([...b,art,...rest].map(csvCell).join(';')); };
+      row(u.zeit,'Einheit',['','','','','','','',u.bem,'']);
+      for(const t of u.teile){
+        row(t.zeit,'Teil',[t.barcode,t.rmnr,'',t.teil,t.met,t.mgz,t.x?'x':'',t.bem,t.quelle]);
+        for(const a of t.akt) row(a.zeit,'Aktivität',[a.barcode,t.rmnr,a.akvp,t.teil,'','','','',a.quelle||'Scan']);
+      }
+      for(const w of u.ohne) row(w.zeit,'ohne Etikett',['','','',w.teil||'','',w.n,'',w.text,'Hand']);
+      for(const f of u.fremd) row(f.zeit,'Fremdprojekt',['','','','','',f.n,'',f.text||'','Hand']);
+    }
+  }
+  return '﻿'+L.join('\r\n');
+}
+const runName = r=>r.beispiel?'Beispiel':`R ${fDM(r.start)} ${fHM(r.start)}`;
+const runFile = r=>{ const d=new Date(r.start); return `${p2(d.getDate())}-${p2(d.getMonth()+1)} ${fFile(r.start)}-${fFile(r.end||Date.now())} Scan`; };
+
+/* ===== Overlays ===== */
+let sheet=null, sheetData={};
+function openSheet(name,data={}){ sheet=name; sheetData=data; renderSheet(); }
+function closeSheet(){ if(sheet==='live') stopLive(); sheet=null; sheetData={}; renderSheet(); }
+function renderSheet(){
+  let el=$('#sheet'); if(!sheet){ if(el) el.remove(); return; }
+  if(!el){ el=document.createElement('div'); el.id='sheet'; el.className='scrim'; el.addEventListener('click',e=>{ if(e.target===el) closeSheet(); }); document.body.appendChild(el); }
+  el.innerHTML=`<div class="sheet" role="dialog" aria-modal="true">${SHEETS[sheet]()}</div>`;
+  const f=el.querySelector('[data-autofocus]'); if(f) f.focus();
+}
+const SHEETS={
+  ort(){ const d=sheetData; d.tab=d.tab||'INT'; d.sub=d.sub||'Lager';
+    const rec=recentOrte();
+    let body='';
+    if(d.tab==='INT'){
+      body+=`<div class="seg">${['Prozess','Lager','Hochregal'].map(s=>`<button data-act="ortSub" data-v="${s}" aria-pressed="${d.sub===s}">${s}</button>`).join('')}</div>`;
+      if(d.sub==='Prozess') body+=`<div class="keys c4 proz">${PROZ.map(p=>`<button data-act="pickOrt" data-v="INT ${p[0]}"><span class="k">${p[0]}</span><span class="d">${esc(p[1])}</span></button>`).join('')}</div>
+        <div class="eyebrow">Zonen 116c</div><div class="keys c4 proz">${ZONEN.map(p=>`<button data-act="pickOrt" data-v="ZONE ${p[0]}"><span class="k">${p[0].slice(5)}</span><span class="d">${esc(p[1])}</span></button>`).join('')}</div>`;
+      if(d.sub==='Hochregal') body+=`<div class="keys c4 lagi">${HR.map(h=>`<button data-act="pickOrt" data-v="INT ${h}"><span class="k">${h}</span></button>`).join('')}</div>`;
+      if(d.sub==='Lager'){
+        body+=`<div class="eyebrow">Reihe (West → Ost)</div><div class="keys c8 lagi">${'ABCDEFGH'.split('').map(R=>`<button data-act="ortReihe" data-v="${R}" aria-pressed="${d.reihe===R}"><span class="k">${R}</span></button>`).join('')}</div>`;
+        if(d.reihe){ body+=`<div class="row"><span class="eyebrow">Stütze (Süd → Nord)</span><button class="small" data-act="ortZw" aria-pressed="${!!d.zw}">zwischen n / n+1</button></div>
+          <div class="keys c5 lagi">${Array.from({length:d.zw?14:15},(_,i)=>i+1).map(n=>{const c=d.zw?`${d.reihe}${n}/${n+1}`:`${d.reihe}${n}`;return `<button data-act="pickOrt" data-v="INT ${c}"><span class="k">${c}</span></button>`;}).join('')}</div>`; }
+      }
+    } else if(d.tab==='EXT'){
+      body+=`<div class="eyebrow">Reihe</div><div class="keys c8 ext">${Object.keys(EXTN).map(R=>`<button data-act="ortReihe" data-v="${R}" aria-pressed="${d.reihe===R}"><span class="k">${R}</span></button>`).join('')}</div>`;
+      if(d.reihe && EXTN[d.reihe]){ body+=`<div class="eyebrow">Platz (ab Einfahrt)</div><div class="keys c5 ext">${Array.from({length:EXTN[d.reihe]},(_,i)=>i+1).map(n=>`<button data-act="pickOrt" data-v="EXT ${d.reihe}${n}"><span class="k">${d.reihe}${n}</span></button>`).join('')}${d.reihe==='B'?`<button data-act="pickOrt" data-v="EXT B11bis"><span class="k">B11bis</span></button>`:''}</div>`; }
+      body+=`<div class="keys c3 ext"><button data-act="pickOrt" data-v="EXT LZ"><span class="k">LZ</span><span class="d">Lieferzone</span></button><button data-act="pickOrt" data-v="EXT X"><span class="k">X</span><span class="d">Platz unbekannt</span></button></div>`;
+    } else {
+      body+=`<label class="f">Neuer Ort (Notation wie in den Notizen)<input id="neuOrt" data-autofocus placeholder="z. B. C11 +3O +2N  oder  vor Tor 57030"></label>
+        <button class="primary" data-act="pickNeu">Übernehmen</button>`;
+    }
+    return `<div class="sh"><h2>${d.edit?'Ort ändern':'Neuer Ort'}</h2><button class="ghost small" data-act="close">Schließen</button></div>
+      ${rec.length&&!d.edit?`<div class="row">${rec.map(c=>`<button class="small" data-act="pickOrt" data-v="${esc(c)}">${tagHTML(c)}</button>`).join('')}</div>`:''}
+      <div class="seg">${['INT','EXT','NEU'].map(t=>`<button data-act="ortTab" data-v="${t}" aria-pressed="${d.tab===t}">${t}</button>`).join('')}</div>${body}`;
+  },
+  einheit(){ const d=sheetData; const o=curOrt(); const u=d.uid?o?.einheiten.find(x=>x.id===d.uid):null; const v=d.v||(d.v=u?{...u}:{typ:'',pxx:'',gesamt:'',lage:'',bem:''});
+    const here=o?lastAtOrt(o.code, S.cur.rid):[];
+    return `<div class="sh"><h2>${u?'Einheit '+u.nr+' ändern':'Neue Einheit'} ${o?tagHTML(o.code):''}</h2><button class="ghost small" data-act="close">Schließen</button></div>
+      <div class="eyebrow">Was trägt die Teile?</div>
+      <div class="keys c4">${TYPEN.map(t=>`<button data-act="setTyp" data-v="${t[0]}" aria-pressed="${v.typ===t[0]}"><span class="k">${t[0]==='SONST'?'…':t[0]}</span><span class="d">${t[1]}</span></button>`).join('')}</div>
+      ${here.length?`<div class="prev"><span class="muted">Letzter Rundgang hier (${fDM(here[0].r.start)}):</span><div class="row">${here.map(h=>`<button class="small" data-act="setPxx" data-v="${esc(h.u.pxx)}" ${h.u.pxx?'':'disabled'}>${esc(h.u.pxx||h.u.nr)} · ${esc(h.u.typ)} · ${h.u.teile.length} Et.</button>`).join('')}</div></div>`:''}
+      <div class="grid2">
+        <label class="f">Pxx (leer = neu)<input id="fPxx" value="${esc(v.pxx)}" placeholder="z. B. P08" autocapitalize="characters"></label>
+        <label class="f">Gesamt gezählt<input id="fGes" value="${esc(v.gesamt)}" inputmode="numeric" placeholder="Stück"></label>
+      </div>
+      <label class="f">Lage (optional, innen)<input id="fLage" value="${esc(v.lage)}" placeholder="z. B. C11 +3O +2N"></label>
+      <label class="f">Bemerkung<input id="fBem" value="${esc(v.bem)}"></label>
+      <div class="row"><button class="primary" data-act="saveEinheit" style="flex:1">${u?'Speichern':'Einheit anlegen und scannen'}</button>
+      ${u?`<button class="danger" data-act="delEinheit">${d.confirmDel?'Wirklich löschen?':'Löschen'}</button>`:''}</div>`;
+  },
+  line(){ const d=sheetData; const u=curUnitById(d.uid); const t=u?.teile.find(x=>x.id===d.tid); if(!t) return '';
+    const inList=!t.teil||inSL(t.teil); const info=TEILE.find(x=>x[0]===t.teil);
+    return `<div class="sh"><h2><span class="code">${esc(t.rmnr||'ohne RMNr')}</span></h2><button class="ghost small" data-act="close">Schließen</button></div>
+      <label class="f">Teil-Nr. (ohne P30962-MZB-)<input id="lTeil" list="teileList" value="${esc(t.teil)}" placeholder="z. B. 100-S22" autocapitalize="characters" ${t.teil?'':'data-autofocus'}></label>
+      <div class="muted" style="font-size:14px">${info?esc(info[1])+' · Stückliste '+esc(info[2]):(inList?'':'<span class="chip warn">nicht in Stückliste</span>')}${t.rmnr?' · wird für '+esc(t.rmnr)+' gemerkt':''}</div>
+      <div class="grid2"><label class="f">Menge Etikett<input id="lMet" inputmode="numeric" value="${esc(t.met)}" placeholder="leer = 1"></label>
+        <label class="f">Menge gezählt<input id="lMgz" inputmode="numeric" value="${esc(t.mgz)}" placeholder="leer = wie Etikett"></label></div>
+      <button data-act="lineX" aria-pressed="${t.x}" class="xbtn">x auf Etikett (Versand)</button>
+      <label class="f">Bemerkung<input id="lBem" value="${esc(t.bem)}" placeholder="z. B. gekantet, Etikett halb lesbar"></label>
+      ${t.akt.length?`<div class="row">${t.akt.map((a,i)=>`<span class="chip akt">${esc(a.akvp)} · ${fHM(a.zeit)} <button class="small ghost" data-act="delAkt" data-v="${i}" aria-label="Aktivität löschen">✕</button></span>`).join('')}</div>`:''}
+      <div class="row"><button class="primary" data-act="saveLine" style="flex:1">Speichern</button><button class="danger" data-act="delLine">${d.confirmDel?'Wirklich löschen?':'Löschen'}</button></div>`;
+  },
+  extra(){ const d=sheetData; const ohne=d.kind==='ohne';
+    return `<div class="sh"><h2>${ohne?'Teile ohne Etikett':'Teile anderer Projekte'}</h2><button class="ghost small" data-act="close">Schließen</button></div>
+      <label class="f">Anzahl<input id="xN" inputmode="numeric" data-autofocus placeholder="Stück"></label>
+      ${ohne?`<label class="f">Vermutlich (Teil-Nr.)<input id="xTeil" list="teileList" placeholder="optional, z. B. 100-S02"></label>`:''}
+      <label class="f">${ohne?'Beschreibung':'Bemerkung'}<input id="xText" placeholder="${ohne?'z. B. Wand ähnlich 100-S04, gekantet':'optional, nur Anzahl zählt'}"></label>
+      <button class="primary" data-act="saveExtra">Hinzufügen</button>`;
+  },
+  export(){ const r=S.rundgaenge.find(x=>x.id===sheetData.rid)||null; const runs=r?[r]:S.rundgaenge.filter(x=>!x.beispiel); const csv=csvFor(runs);
+    const name=r?runFile(r)+'.csv':'Alle Rundgänge Scan.csv'; sheetData.csv=csv; sheetData.name=name;
+    return `<div class="sh"><h2>Export</h2><button class="ghost small" data-act="close">Schließen</button></div>
+      <div><span class="code">${esc(name)}</span><div class="muted" style="font-size:14px">${csv.split('\n').length-1} Zeilen · Trenner ; · UTF-8</div></div>
+      <div class="row"><button class="primary" data-act="doSave" style="flex:1">CSV speichern</button><button data-act="doCopy">Text kopieren</button></div>
+      <textarea class="csv" id="csvText" readonly>${esc(csv.slice(1))}</textarea>
+      <div class="muted" style="font-size:14px">Datei an Claude schicken. Die Pxx werden bei der Auswertung zugeordnet.</div>`;
+  },
+  live(){ return `<div class="sh"><h2>Live-Scan</h2><button class="primary small" data-act="close">Fertig</button></div>
+      <div id="liveCtx" class="row"></div><video id="vid" playsinline muted></video>
+      <div id="liveStat" class="code" style="font-size:20px;min-height:28px">Code ins Bild halten …</div>`; }
+};
+function renderLiveCtx(){ const el=$('#liveCtx'); const u=curUnit(), o=curOrt(); if(el&&u) el.innerHTML=`${tagHTML(o.code)} <span class="chip">${esc(u.nr)} · ${esc(u.typ)} ${esc(u.pxx)}</span> <span class="chip">${u.teile.length} Etiketten</span>`; }
+function curUnitById(id){ const r=run(); for(const o of r?.orte||[]) for(const u of o.einheiten) if(u.id===id) return u; return null; }
+
+/* ===== Hauptansicht ===== */
+function render(){
+  const app=$('#app');
+  $('#teileList').innerHTML || ($('#teileList').innerHTML=TEILE.map(t=>`<option value="${esc(t[0])}">${esc(t[1])}</option>`).join(''));
+  const r=run();
+  if(!r){ app.innerHTML=homeHTML(); return; }
+  const u=curUnit(), o=curOrt();
+  app.innerHTML=`
+  <header class="top"><div class="wrap"><div class="runinfo"><div class="eyebrow">Rundgang${r.beispiel?' · Beispiel':''}</div><div class="t">${fDate(r.start)} · ab ${fHM(r.start)}${r.end?' bis '+fHM(r.end):''}</div></div>
+    <div class="row"><button class="small" data-act="home">Übersicht</button><button class="small primary" data-act="endRun">${r.end?'Export':'Beenden'}</button></div></div></header>
+  <main class="wrap" style="padding-top:14px">
+    ${storageOk?'':`<div class="banner err">Speicher im Browser nicht verfügbar. Daten gehen beim Schließen verloren – am Ende unbedingt exportieren.</div>`}
+    ${!r.orte.length?`<div class="panel"><h2>Erster Ort</h2><p class="muted" style="margin:0">Ort wählen, dann Einheit (Palette, Wagen, Regal, Boden), dann Etiketten scannen.</p><button class="primary" data-act="newOrt">Ort wählen</button></div>`:''}
+    ${[...r.orte].reverse().map(oo=>ortHTML(r,oo)).join('')}
+  </main>
+  <div class="dock"><div class="wrap">
+    <div class="ctx">${u?`Scannen in ${tagHTML(o.code)} <b>${esc(u.nr)}</b> ${esc(u.typ)} ${u.pxx?`<span class="code">${esc(u.pxx)}</span>`:''}`:'Kein Ziel gewählt'}</div>
+    <div class="scanrow"><button class="primary" data-act="photo">Foto-Scan</button><button data-act="live">Live-Scan</button></div>
+    <button class="small ghost" data-act="gallery" style="min-height:30px">Foto aus Galerie lesen</button>
+    <form class="entry" id="entryForm"><input id="entry" placeholder="RMNr, Barcode oder Teil-Nr." autocomplete="off" enterkeyhint="done"><button type="submit">OK</button></form>
+    <div class="acts"><button class="small" data-act="newOrt">+ Ort</button><button class="small" data-act="newUnit" ${o?'':'disabled'}>+ Einheit</button>
+      <button class="small" data-act="extra" data-v="ohne" ${u?'':'disabled'}>ohne Et.</button><button class="small" data-act="extra" data-v="fremd" ${u?'':'disabled'}>Fremd</button></div>
+  </div></div>`;
+}
+function ortHTML(r,o){
+  return `<section class="ort"><div class="oh">${tagHTML(o.code)}<button class="small ghost" data-act="editOrt" data-o="${o.id}">ändern</button><span class="tm">${fHM(o.zeit)}</span></div>
+    ${o.einheiten.map(u=>unitHTML(r,o,u)).join('')}
+    <div class="unit"><button class="small" data-act="newUnitAt" data-o="${o.id}">+ weitere Einheit hier</button></div></section>`;
+}
+function unitHTML(r,o,u){
+  const cur=S.cur?.uid===u.id;
+  const ohneN=u.ohne.reduce((a,w)=>a+(+w.n||0),0), fremdN=u.fremd.reduce((a,w)=>a+(+w.n||0),0);
+  const sumEt=u.teile.reduce((a,t)=>a+(+(t.mgz||t.met||1)),0)+ohneN;
+  const prev=u.pxx?lastByPxx(u.pxx,r.id):null;
+  return `<div class="unit ${cur?'cur':''}" data-unit="${u.id}">
+    <div class="uh"><span class="code muted">${esc(u.nr)}</span><span class="ty">${esc(u.typ==='SONST'?'Sonstiges':u.typ)}</span>
+      <span class="px ${u.pxx?'':'none'}">${esc(u.pxx||'Pxx offen')}</span>
+      ${u.gesamt?`<span class="chip">gezählt ${esc(u.gesamt)}</span>`:''}
+      <span class="sum">${u.teile.length} Et. · Σ ${sumEt}${fremdN?` · +${fremdN} fremd`:''}</span></div>
+    ${u.gesamt && +u.gesamt!==sumEt?`<div><span class="chip warn">Gesamt ${esc(u.gesamt)} ≠ Summe ${sumEt}</span></div>`:''}
+    ${u.lage||u.bem?`<div class="muted" style="font-size:14px">${esc([u.lage&&'Lage '+u.lage,u.bem].filter(Boolean).join(' · '))}</div>`:''}
+    ${cur&&prev&&!u.teile.length?`<div class="prev"><span>Letzter Stand <b class="code">${esc(prev.u.pxx)}</b>: ${fDM(prev.r.start)} ${fHM(prev.u.zeit)} · ${tagHTML(prev.o.code)} · ${prev.u.teile.length} Et.${prev.u.gesamt?' · gezählt '+esc(prev.u.gesamt):''}</span>
+      <button class="small" data-act="takeOver">Unverändert übernehmen</button></div>`:''}
+    <ul class="lines">${[...u.teile].reverse().map(t=>lineHTML(u,t)).join('')}
+      ${u.ohne.map((w,i)=>`<li class="ln soft"><div class="main"><span class="tl">ohne Etikett · ${esc(w.n)} Stk.</span><span class="muted">${esc([w.teil,w.text].filter(Boolean).join(' · '))}</span></div><button class="small ghost" data-act="delExtra" data-u="${u.id}" data-k="ohne" data-v="${i}" aria-label="Löschen">✕</button></li>`).join('')}
+      ${u.fremd.map((w,i)=>`<li class="ln soft"><div class="main"><span class="tl">Fremdprojekt · ${esc(w.n)} Stk.</span><span class="muted">${esc(w.text)}</span></div><button class="small ghost" data-act="delExtra" data-u="${u.id}" data-k="fremd" data-v="${i}" aria-label="Löschen">✕</button></li>`).join('')}
+    </ul>
+    <div class="row">${cur?'':`<button class="small" data-act="selUnit" data-o="${o.id}" data-u="${u.id}">Hier weiterscannen</button>`}<button class="small ghost" data-act="editUnit" data-o="${o.id}" data-u="${u.id}">Einheit ändern</button></div>
+  </div>`;
+}
+function lineHTML(u,t){
+  const ls=t.rmnr?lastSeen(t.rmnr,u.id):null;
+  const notInList=t.teil&&!inSL(t.teil);
+  return `<li class="ln" data-line="${t.id}">
+    <div class="main" data-act="editLine" data-u="${u.id}" data-t="${t.id}"><span class="rm">${esc(t.rmnr||'—')}</span><span class="tl ${t.teil?'':'empty'}">${esc(t.teil||'Teil-Nr. antippen')}</span></div>
+    <button class="xbtn small" data-act="toggleX" data-u="${u.id}" data-t="${t.id}" aria-pressed="${t.x}" aria-label="x auf Etikett">x</button>
+    ${(t.akt.length||t.met||t.mgz||t.bem||notInList||t.quelle!=='Scan')?`<div class="meta">${t.akt.map(a=>`<span class="chip akt">${esc(a.akvp)}</span>`).join('')}
+      ${t.met?`<span class="chip">Etikett ${esc(t.met)}</span>`:''}${t.mgz?`<span class="chip">gezählt ${esc(t.mgz)}</span>`:''}
+      ${notInList?'<span class="chip warn">nicht in Stückliste</span>':''}${t.quelle!=='Scan'?`<span class="chip">${esc(t.quelle)}</span>`:''}${t.bem?`<span class="muted">${esc(t.bem)}</span>`:''}</div>`:''}
+    ${ls?`<div class="hint">zuletzt ${fDM(ls.zeit)} ${fHM(ls.zeit)} · ${esc(ls.ort)} · ${esc(ls.pxx||ls.nr)}${ls.pxx&&!u.pxx?` <button class="small" data-act="setUnitPxx" data-u="${u.id}" data-v="${esc(ls.pxx)}">= ${esc(ls.pxx)}</button>`:''}</div>`:''}
+  </li>`;
+}
+function homeHTML(){
+  const runs=[...S.rundgaenge].sort((a,b)=>b.start-a.start);
+  return `<main class="wrap" style="padding-top:18px">
+    <div><div class="eyebrow">Materialfluss Ist-Aufnahme</div><h1>Scan-Rundgang</h1></div>
+    ${storageOk?'':`<div class="banner err">Speicher im Browser nicht verfügbar. Nach jedem Rundgang exportieren.</div>`}
+    <button class="primary" data-act="newRun" style="min-height:56px;font-size:19px">Neuer Rundgang</button>
+    ${runs.map(r=>{ const us=allUnits(r); const n=us.reduce((a,[,u])=>a+u.teile.length,0);
+      return `<div class="panel runcard"><div><div class="eyebrow">${r.beispiel?'Beispiel – darf gelöscht werden':(r.end?'abgeschlossen':'läuft')}</div><h2>${fDate(r.start)} · ${fHM(r.start)}${r.end?'–'+fHM(r.end):''}</h2></div>
+        <div class="row"><button class="small" data-act="openRun" data-v="${r.id}">Öffnen</button><button class="small" data-act="exportRun" data-v="${r.id}">CSV</button></div>
+        <div class="stats">${r.orte.length} Orte · ${us.length} Einheiten · ${n} Etiketten</div>
+        <div class="row" style="grid-column:1/-1"><button class="small danger ghost" data-act="delRun" data-v="${r.id}">${sheetData.delRun===r.id?'Wirklich löschen?':'Löschen'}</button></div></div>`; }).join('')}
+    <details class="panel" open><summary>Sicherung und Register</summary>
+      <p class="muted" style="margin:0;font-size:15px">Die Daten liegen nur in diesem Browser. Sicherung als JSON, um sie auf ein anderes Gerät zu bringen. Register: ${Object.keys(S.register).length} RMNr mit Teil-Nr.</p>
+      <div class="muted code" style="font-size:12.5px">Technik: https ${window.isSecureContext?'ja':'nein'} · BarcodeDetector ${'BarcodeDetector' in window?'ja':'nein'} · Kamera-API ${navigator.mediaDevices?'ja':'nein'}</div>
+      <div class="row"><button class="small" data-act="exportAll">Alle als CSV</button><button class="small" data-act="backup">Sicherung speichern</button><button class="small" data-act="restore">Sicherung laden</button></div>
+    </details>
+  </main>`;
+}
+
+/* ===== Aktionen ===== */
+document.addEventListener('submit',e=>{ if(e.target.id==='entryForm'){ e.preventDefault(); const i=$('#entry'); const v=i.value; if(handleCode(v,'Eingabe')) i.value=''; setTimeout(()=>$('#entry')?.focus(),0); } });
+document.addEventListener('click',async e=>{
+  const b=e.target.closest('[data-act]'); if(!b) return; const a=b.dataset.act, v=b.dataset.v;
+  const r=run();
+  switch(a){
+    case 'close': closeSheet(); break;
+    case 'home': S.cur=null; save(); render(); break;
+    case 'newRun': { const nr={id:'R'+uid(),start:Date.now(),end:null,orte:[]}; S.rundgaenge.push(nr); S.cur={rid:nr.id}; save(); render(); openSheet('ort'); requestWake(); break; }
+    case 'openRun': { const rr=S.rundgaenge.find(x=>x.id===v); const last=rr.orte.at(-1); const lu=last?.einheiten.at(-1);
+      S.cur={rid:v,oid:last?.id,uid:lu?.id}; save(); render(); requestWake(); break; }
+    case 'delRun': if(sheetData.delRun===v){ S.rundgaenge=S.rundgaenge.filter(x=>x.id!==v); sheetData={}; save(); } else sheetData={delRun:v}; render(); break;
+    case 'exportRun': openSheet('export',{rid:v}); break;
+    case 'exportAll': openSheet('export',{}); break;
+    case 'endRun': if(!r.end) r.end=Date.now(); save(); render(); openSheet('export',{rid:r.id}); break;
+    case 'doSave': saveFile(sheetData.name, sheetData.csv, 'text/csv'); break;
+    case 'doCopy': { const t=sheetData.csv.slice(1); try{ await navigator.clipboard.writeText(t); toast('Kopiert'); }catch(_){ const ta=$('#csvText'); ta.focus(); ta.select(); toast('Text markiert – jetzt kopieren.'); } break; }
+    case 'backup': { const d=new Date(); saveFile(`Scan-Rundgang Sicherung ${p2(d.getDate())}-${p2(d.getMonth()+1)} ${fFile(d)}.json`, JSON.stringify(S,null,1), 'application/json'); }; break;
+    case 'restore': $('#jsonin').click(); break;
+    case 'newOrt': openSheet('ort'); break;
+    case 'editOrt': S.cur={...S.cur,oid:b.dataset.o}; openSheet('ort',{edit:b.dataset.o}); break;
+    case 'ortTab': sheetData.tab=v; sheetData.reihe=null; renderSheet(); break;
+    case 'ortSub': sheetData.sub=v; renderSheet(); break;
+    case 'ortReihe': sheetData.reihe=v; renderSheet(); break;
+    case 'ortZw': sheetData.zw=!sheetData.zw; renderSheet(); break;
+    case 'pickNeu': { const t=$('#neuOrt').value.trim(); if(!t){ toast('Ort beschreiben.','err'); return; } pickOrt('NEU '+t); break; }
+    case 'pickOrt': pickOrt(v); break;
+    case 'newUnit': openSheet('einheit',{}); break;
+    case 'newUnitAt': S.cur={...S.cur,oid:b.dataset.o}; openSheet('einheit',{}); break;
+    case 'editUnit': S.cur={...S.cur,oid:b.dataset.o}; openSheet('einheit',{uid:b.dataset.u}); break;
+    case 'selUnit': S.cur={rid:S.cur.rid,oid:b.dataset.o,uid:b.dataset.u}; save(); render(); break;
+    case 'setTyp': grabEinheit(); sheetData.v.typ=v; renderSheet(); break;
+    case 'setPxx': grabEinheit(); sheetData.v.pxx=v; renderSheet(); break;
+    case 'saveEinheit': saveEinheit(); break;
+    case 'delEinheit': if(sheetData.confirmDel){ const o=curOrt(); o.einheiten=o.einheiten.filter(x=>x.id!==sheetData.uid); if(S.cur.uid===sheetData.uid) S.cur.uid=o.einheiten.at(-1)?.id; save(); closeSheet(); render(); } else { grabEinheit(); sheetData.confirmDel=true; renderSheet(); } break;
+    case 'setUnitPxx': { const u=curUnitById(b.dataset.u); u.pxx=v; save(); render(); toast(`Einheit = ${v}`); break; }
+    case 'takeOver': takeOver(); break;
+    case 'toggleX': { const u=curUnitById(b.dataset.u); const t=u.teile.find(x=>x.id===b.dataset.t); t.x=!t.x; save(); render(); break; }
+    case 'editLine': openSheet('line',{uid:b.dataset.u,tid:b.dataset.t}); break;
+    case 'lineX': { const t=lineObj(); grabLine(t); t.x=!t.x; save(); renderSheet(); render(); break; }
+    case 'saveLine': { const t=lineObj(); grabLine(t); if(t.rmnr && t.teil){ S.register[t.rmnr]=t.teil; forEachTeil(x=>{ if(x.rmnr===t.rmnr && !x.teil) x.teil=t.teil; }); } save(); closeSheet(); render(); break; }
+    case 'delLine': if(sheetData.confirmDel){ const u=curUnitById(sheetData.uid); u.teile=u.teile.filter(x=>x.id!==sheetData.tid); save(); closeSheet(); render(); } else { grabLine(lineObj()); sheetData.confirmDel=true; renderSheet(); } break;
+    case 'delAkt': { const t=lineObj(); grabLine(t); t.akt.splice(+v,1); save(); renderSheet(); render(); break; }
+    case 'extra': openSheet('extra',{kind:v}); break;
+    case 'saveExtra': { const n=$('#xN').value.trim(); if(!n||isNaN(+n)){ toast('Anzahl eingeben.','err'); return; } const u=curUnit();
+      const item={n:+n,text:$('#xText').value.trim(),zeit:Date.now()}; if(sheetData.kind==='ohne'){ item.teil=$('#xTeil').value.trim()?normTeil($('#xTeil').value):''; u.ohne.push(item);} else u.fremd.push(item);
+      save(); closeSheet(); render(); break; }
+    case 'delExtra': { const u=curUnitById(b.dataset.u); u[b.dataset.k].splice(+v,1); save(); render(); break; }
+    case 'photo': $('#photo').click(); break;
+    case 'gallery': $('#gallery').click(); break;
+    case 'live': if(!curUnit()){ toast('Zuerst Ort und Einheit wählen.','err'); return; } startLive(); break;
+  }
+});
+function forEachTeil(fn){ S.rundgaenge.forEach(r=>r.orte.forEach(o=>o.einheiten.forEach(u=>u.teile.forEach(fn)))); }
+function lineObj(){ return curUnitById(sheetData.uid)?.teile.find(x=>x.id===sheetData.tid); }
+function grabLine(t){ if(!$('#lTeil')) return; const tv=$('#lTeil').value.trim(); t.teil=tv?normTeil(tv):''; t.met=$('#lMet').value.trim(); t.mgz=$('#lMgz').value.trim(); t.bem=$('#lBem').value.trim(); }
+function grabEinheit(){ if(!$('#fPxx')) return; const v=sheetData.v; v.pxx=$('#fPxx').value.trim().toUpperCase(); v.gesamt=$('#fGes').value.trim(); v.lage=$('#fLage').value.trim(); v.bem=$('#fBem').value.trim(); }
+function pickOrt(code){
+  const r=run();
+  if(sheetData.edit){ const o=ortOf(r,sheetData.edit); o.code=code; save(); closeSheet(); render(); return; }
+  const o={id:'o'+uid(), code, zeit:Date.now(), einheiten:[]}; r.orte.push(o); S.cur={rid:r.id,oid:o.id,uid:null}; save(); render();
+  openSheet('einheit',{});
+}
+function saveEinheit(){
+  grabEinheit(); const v=sheetData.v; if(!v.typ){ toast('Typ wählen (K, E, 3M, 6M, WA, KR, BOD …).','err'); return; }
+  if(v.pxx && !/^P\d{2}(\.\d+)?$/.test(v.pxx)) toast(`„${v.pxx}“ ist kein üblicher Pxx-Code – trotzdem gespeichert.`,'warn');
+  const o=curOrt(); const r=run();
+  if(sheetData.uid){ const u=o.einheiten.find(x=>x.id===sheetData.uid); Object.assign(u,{typ:v.typ,pxx:v.pxx,gesamt:v.gesamt,lage:v.lage,bem:v.bem}); S.cur.uid=u.id; }
+  else { const u={id:'u'+uid(),nr:nextNr(r),typ:v.typ,pxx:v.pxx,gesamt:v.gesamt,lage:v.lage,bem:v.bem,zeit:Date.now(),ohne:[],fremd:[],teile:[]}; o.einheiten.push(u); S.cur.uid=u.id; }
+  save(); closeSheet(); render(); setTimeout(()=>document.querySelector('.unit.cur')?.scrollIntoView({block:'start'}),50);
+}
+function takeOver(){
+  const u=curUnit(); const p=lastByPxx(u.pxx,S.cur.rid); if(!p) return; const now=Date.now();
+  p.u.teile.forEach((t,i)=>u.teile.push({id:uid(),zeit:now+i,barcode:t.barcode,rmnr:t.rmnr,teil:t.teil,met:t.met,mgz:t.mgz,x:t.x,bem:t.bem,quelle:'übernommen',akt:[]}));
+  p.u.ohne.forEach(w=>u.ohne.push({...w,zeit:now})); p.u.fremd.forEach(w=>u.fremd.push({...w,zeit:now}));
+  if(!u.gesamt) u.gesamt=p.u.gesamt; u.bem=[u.bem,'unverändert wie '+fDM(p.r.start)].filter(Boolean).join(' · ');
+  save(); render(); toast(`${p.u.teile.length} Zeilen übernommen – bei Abweichung einzeln ändern.`);
+}
+$('#jsonin').addEventListener('change',async e=>{
+  const f=e.target.files[0]; e.target.value=''; if(!f) return;
+  try{ const d=JSON.parse(await f.text()); let n=0;
+    (d.rundgaenge||[]).forEach(r=>{ if(!S.rundgaenge.some(x=>x.id===r.id)){ S.rundgaenge.push(r); n++; } });
+    Object.assign(S.register, d.register||{}); save(); render(); toast(`${n} Rundgänge geladen`); }
+  catch(_){ toast('Datei ist keine gültige Sicherung.','err'); }
+});
+let wake=null; async function requestWake(){ try{ wake=await navigator.wakeLock?.request('screen'); }catch(e){} }
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible' && run()) requestWake(); });
+
+load(); render();
+</script>
+</body></html>
