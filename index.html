@@ -610,7 +610,7 @@ function lineHTML(u,t){
 function homeHTML(){
   const runs=[...S.rundgaenge].sort((a,b)=>b.start-a.start);
   return `<main class="wrap" style="padding-top:18px">
-    <div><div class="eyebrow">Materialfluss Ist-Aufnahme</div><h1>Scan-Rundgang</h1></div>
+    <div><div class="eyebrow">Materialfluss Ist-Aufnahme</div><h1>Scan-Rundgang</h1><div class="muted" style="font-size:13px">Version 5 · 23.10.2026</div></div>
     ${storageOk?'':`<div class="banner err">Speicher im Browser nicht verfügbar. Nach jedem Rundgang exportieren.</div>`}
     <button class="primary" data-act="newRun" style="min-height:56px;font-size:19px">Neuer Rundgang</button>
     ${runs.map(r=>{ const us=allUnits(r); const n=us.reduce((a,[,u])=>a+u.teile.length,0);
