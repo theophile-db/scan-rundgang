@@ -26,7 +26,7 @@
 *{box-sizing:border-box}
 html,body{background:var(--bg)}
 body{color:var(--ink);font-family:var(--f-ui);font-size:17px;line-height:1.35;
-  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 290px}
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 250px}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
 .wrap{max-width:640px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
 h1,h2,h3{margin:0;text-wrap:balance;font-weight:700}
@@ -131,7 +131,9 @@ header.top .row{flex-wrap:nowrap;flex-shrink:0}
 .toast.err{background:var(--err);color:#fff}
 .toast.warn{background:var(--warn);color:#fff}
 textarea.csv{font-family:var(--f-code);font-size:12px;min-height:180px;white-space:pre;overflow:auto}
-video{width:100%;border-radius:10px;background:#000;max-height:55vh;object-fit:cover}
+video{display:block;width:100%;height:auto;border-radius:10px;background:#000}
+.vwrap{position:relative}
+.guide{position:absolute;left:10%;top:32.5%;width:80%;height:35%;border:3px solid var(--accent);border-radius:8px;box-shadow:0 0 0 999px rgba(0,0,0,.35);pointer-events:none}
 details>summary{cursor:pointer;font-weight:600}
 @media (max-width:420px){ .keys.c8{grid-template-columns:repeat(4,1fr)} .keys.c5{grid-template-columns:repeat(4,1fr)} }
 @media (prefers-reduced-motion:reduce){ .ln.new{animation:none} }
@@ -139,7 +141,6 @@ details>summary{cursor:pointer;font-weight:600}
 
 <div id="app"></div>
 <input type="file" id="photo" accept="image/*" capture="environment" hidden>
-<input type="file" id="gallery" accept="image/*" hidden>
 <input type="file" id="jsonin" accept="application/json,.json" hidden>
 <datalist id="teileList"></datalist>
 
@@ -157,7 +158,6 @@ const HR = ['HRE1','HRE2','HRF1','HRF2','HRG1','HRG2','HRG3'];
 const EXTN = {A:14,B:12,C:9,D:8,E:6,F:6,G:12,H:6};
 const TYPEN = [['K','klein 80×60'],['E','Euro 120×80'],['3M','3 m'],['6M','6 m'],['WA','Wagen'],['KR','Regal mobil'],['BOD','Boden'],['SONST','Sonstiges']];
 const KEY = 'scanRundgangP30962.v1';
-const ZXING_URL = 'https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js';
 
 /* ===== Zustand ===== */
 let S, storageOk = true;
@@ -255,9 +255,8 @@ function handleCode(raw, quelle='Scan'){
   }
   if(digits.length===10){
     const rm=digits.slice(0,6), ak=digits.slice(6);
-    const last=[...u.teile].filter(t=>t.rmnr).sort((a,b)=>b.zeit-a.zeit)[0];
-    if(!last){ beep(false); toast('Aktivität ohne Teil: zuerst die RMNr scannen.','err'); return false; }
-    if(last.rmnr!==rm){ beep(false); toast(`Aktivität passt nicht zum letzten Teil (${last.rmnr}). Zuerst ${rm} scannen.`,'err'); return false; }
+    const last=[...u.teile].filter(t=>t.rmnr===rm).sort((a,b)=>b.zeit-a.zeit)[0];
+    if(!last){ beep(false); toast(`Aktivität ${ak}: Teil ${rm} ist in dieser Einheit noch nicht gescannt. Zuerst die RMNr scannen.`,'err'); return false; }
     if(last.akt.some(a=>a.akvp===ak)){ beep(false); toast(`Aktivität ${ak} schon erfasst.`,'warn'); return false; }
     last.akt.push({akvp:ak, barcode:digits, zeit:Date.now(), quelle});
     save(); render(); flashLine(last.id); beep(true); toast(`Aktivität ${ak} → ${rm}`); return true;
@@ -278,150 +277,176 @@ function addTeil(u,o){
 function flashLine(id){ const el=document.querySelector(`[data-line="${id}"]`); if(el){ el.classList.remove('new'); void el.offsetWidth; el.classList.add('new'); el.scrollIntoView({block:'nearest'}); } }
 
 /* ===== Foto-Scan ===== */
-/* Eigener Code-39-Leser (Etiketten: *274737*). Liest viele waagrechte Linien, 0° und 90°, Mehrheitsentscheid. */
+/* Eigener Code-39-Leser für die Werkstatt-Etiketten (*274737*).
+   Liest viele parallele Linien, entfernt weiße Druckfehler in breiten Balken, prüft jedes Zeichen streng
+   und fasst Treffer nach Lage im Bild zusammen: ein Bereich = ein Strich-Code (mehrere Codes je Bild möglich). */
 const C39 = (()=>{
   const ENC = {'0':0x034,'1':0x121,'2':0x061,'3':0x160,'4':0x031,'5':0x130,'6':0x070,'7':0x025,'8':0x124,'9':0x064,
     'A':0x109,'B':0x049,'C':0x148,'D':0x019,'E':0x118,'F':0x058,'G':0x00D,'H':0x10C,'I':0x04C,'J':0x01C,'K':0x103,'L':0x043,'M':0x142,
     'N':0x013,'O':0x112,'P':0x052,'Q':0x007,'R':0x106,'S':0x046,'T':0x016,'U':0x181,'V':0x0C1,'W':0x1C0,'X':0x091,'Y':0x190,'Z':0x0D0,
     '-':0x085,'.':0x184,' ':0x0C4,'$':0x0A8,'/':0x0A2,'+':0x08A,'%':0x02A,'*':0x094};
   const DEC = {}; for(const k in ENC) DEC[ENC[k]] = k;
-  function bits(w){ // 9 Breiten -> 9-Bit-Muster, die 3 breitesten = 1
+  const VALID = /^\d{6}(\d{4})?$/;                 // RMNr (6) oder RMNr + AkvP (10)
+  function charOf(w){                               // 9 Breiten -> Zeichen oder null
     const idx=[...w.keys()].sort((a,b)=>w[b]-w[a]);
     const wideMin=w[idx[2]], narrowMax=w[idx[3]];
-    if(wideMin < narrowMax*1.5) return -1;          // kein klarer Unterschied breit/schmal
-    let v=0; for(let i=0;i<9;i++) v = (v<<1) | (w[i]>=wideMin?1:0); return v;
+    if(wideMin < narrowMax*1.3) return null;
+    let v=0,n=0,W=0; for(let i=0;i<9;i++){ const b=w[i]>=wideMin?1:0; v=(v<<1)|b; if(b) W+=w[i]; else n+=w[i]; }
+    const ratio=(W/3)/(n/6); if(ratio<1.8||ratio>4.2) return null;
+    return DEC[v] ?? null;
   }
-  function charOk(w){ // Muster prüfen: 3 breit / 6 schmal, Verhältnis plausibel
-    const v=bits(w); if(v<0||DEC[v]===undefined) return null;
-    let n=0,W=0,nmax=0,wmin=1e9; for(let i=0;i<9;i++){ if((v>>(8-i))&1){ W+=w[i]; wmin=Math.min(wmin,w[i]); } else { n+=w[i]; nmax=Math.max(nmax,w[i]); } }
-    n/=6; W/=3; const ratio=W/n;
-    if(ratio<1.8||ratio>4.2||wmin<nmax*1.3) return null;
-    return DEC[v];
-  }
-  function decodeRuns(r){ // r[0] = dunkel
+  function decodeRuns(r){                           // r[0] = dunkel; Rückgabe [{s,a,b}] (Lauf-Indizes)
     const out=[];
     for(let i=0;i+9<=r.length;i+=2){
-      if(charOk(r.slice(i,i+9))!=='*') continue;
-      const cw=r.slice(i,i+9).reduce((a,b)=>a+b,0);          // Zeichenbreite
-      if(i>0 && r[i-1]<cw*0.24) continue;                      // Ruhezone vor dem Start fehlt
-      let j=i+10, s='', ok=false;
+      if(charOf(r.slice(i,i+9))!=='*') continue;
+      const cw=r.slice(i,i+9).reduce((a,b)=>a+b,0);
+      if(i>0 && r[i-1]<cw*0.24) continue;           // Ruhezone vor Start
+      let j=i+10, s='';
       while(j+9<=r.length){
-        const gap=r[j-1]; if(gap>cw*0.35) break;               // Lücke zwischen Zeichen zu groß
+        if(r[j-1]>cw*0.35) break;                   // Lücke zwischen Zeichen
         const seg=r.slice(j,j+9), sw=seg.reduce((a,b)=>a+b,0);
-        if(sw<cw*0.8||sw>cw*1.25) break;                       // Zeichenbreite passt nicht
-        const c=charOk(seg); if(c===null) break;
-        if(c==='*'){ ok = s.length>0 && (j+9>=r.length || r[j+9]>=cw*0.24); break; }
+        if(sw<cw*0.8||sw>cw*1.25) break;            // gleiche Zeichenbreite
+        const c=charOf(seg); if(c===null) break;
+        if(c==='*'){ if(s.length && (j+9>=r.length || r[j+9]>=cw*0.24)) out.push({s,a:i,b:j+9}); break; }
         s+=c; j+=10;
       }
-      if(ok) out.push(s);
     }
     return out;
   }
-  function runsOf(line){ // line: Grauwerte -> Lauflängen ab erstem dunklen Lauf
+  function runsOf(line){                            // Grauwerte -> {r, start}
     const n=line.length, w=Math.max(15,Math.round(n/25)), th=new Float32Array(n);
     for(let i=0;i<n;i++){ let mn=255,mx=0; for(let k=Math.max(0,i-w);k<Math.min(n,i+w);k+=2){ const v=line[k]; if(v<mn)mn=v; if(v>mx)mx=v; }
-      th[i] = (mx-mn<35) ? -1 : (mn+mx)/2; }
-    const r=[]; let cur=null, len=0;
-    for(let i=0;i<n;i++){ const d = th[i]>=0 && line[i]<th[i]; if(cur===null){ if(!d) continue; cur=true; len=0; }
+      th[i]=(mx-mn<35)?-1:(mn+mx)/2; }
+    const r=[]; let cur=null,len=0,start=0;
+    for(let i=0;i<n;i++){ const d=th[i]>=0&&line[i]<th[i]; if(cur===null){ if(!d) continue; cur=true; len=0; start=i; }
       if(d===cur) len++; else { r.push(len); cur=d; len=1; } }
-    if(len) r.push(len); return r;
+    if(len) r.push(len); return {r,start};
   }
-  function clean(r0,f){ // weiße Streifen in Balken (Druckfehler) und Punkte entfernen: sehr kurze Läufe mit Nachbarn verschmelzen
+  function clean(r0,f){                             // sehr kurze Läufe (weiße Streifen, Punkte) mit Nachbarn verschmelzen
     const r=r0.slice(); if(r.length<12) return r;
-    const med=[...r].sort((a,b)=>a-b)[Math.floor(r.length/2)], lim=Math.max(2,med*f);
-    for(let guard=0;guard<r.length;guard++){
-      let mi=-1, mv=1e9; for(let i=1;i<r.length-1;i++) if(r[i]<mv){ mv=r[i]; mi=i; }
-      if(mi<0||mv>=lim) break;
-      r.splice(mi-1,3,r[mi-1]+r[mi]+r[mi+1]);
-    }
+    const lim=Math.max(2,[...r].sort((a,b)=>a-b)[r.length>>1]*f);
+    for(let g=0;g<r.length;g++){ let mi=-1,mv=1e9; for(let i=1;i<r.length-1;i++) if(r[i]<mv){ mv=r[i]; mi=i; }
+      if(mi<0||mv>=lim) break; r.splice(mi-1,3,r[mi-1]+r[mi]+r[mi+1]); }
     return r;
   }
-  function scan(gray,W,H,vertical){
-    const votes={}, L=vertical?H:W, M=vertical?W:H, line=new Uint8Array(L);
-    const N=90;
-    for(let s=1;s<N;s++){ const m=Math.round(M*s/N);
-      for(let i=0;i<L;i++){ let a=0; for(let q=-1;q<=1;q++){ const mm=Math.min(M-1,Math.max(0,m+q)); a+= vertical? gray[i*W+mm] : gray[mm*W+i]; } line[i]=a/3; }
-      const raw=runsOf(line);
-      for(const f of [0,0.3,0.45,0.6]){ const r=f?clean(raw,f):raw;
-        for(const rr of [r, r.slice().reverse().slice(r.length%2===0?1:0)])
-          for(const t of decodeRuns(rr)) votes[t]=(votes[t]||0)+1; }
+  function hitsLine(line){                          // Treffer auf einer Linie, beide Leserichtungen
+    const L=line.length, out=[], seen=new Set();
+    for(const rev of [false,true]){
+      const ln=rev?line.slice().reverse():line; const {r,start}=runsOf(ln);
+      for(const f of [0,0.3,0.45,0.6]){ const rr=f?clean(r,f):r; const pre=[0]; for(const x of rr) pre.push(pre.at(-1)+x);
+        for(const h of decodeRuns(rr)){ if(!VALID.test(h.s)) continue;
+          let p0=start+pre[h.a], p1=start+pre[h.b]; if(rev){ [p0,p1]=[L-p1,L-p0]; }
+          const key=h.s+'@'+Math.round(p0/20); if(seen.has(key)) continue; seen.add(key); out.push({s:h.s,p0,p1}); } }
     }
-    return votes;
+    return out;
   }
-  function votesCanvas(c){
+  function scan(gray,W,H,vertical,N){
+    const L=vertical?H:W, M=vertical?W:H, line=new Uint8Array(L), d=M/N/2+1, hits=[];
+    for(let k=1;k<N;k++){ const m=Math.round(M*k/N);
+      for(let i=0;i<L;i++){ let a=0; for(let q=-1;q<=1;q++){ const mm=Math.min(M-1,Math.max(0,m+q)); a+= vertical?gray[i*W+mm]:gray[mm*W+i]; } line[i]=a/3; }
+      for(const h of hitsLine(line)) hits.push(vertical?{s:h.s,x0:m-d,x1:m+d,y0:h.p0,y1:h.p1}:{s:h.s,x0:h.p0,x1:h.p1,y0:m-d,y1:m+d});
+    }
+    return hits;
+  }
+  function overlap(a,b,tol){ const ix=Math.min(a.x1,b.x1)-Math.max(a.x0,b.x0), iy=Math.min(a.y1,b.y1)-Math.max(a.y0,b.y0);
+    const mw=Math.min(a.x1-a.x0,b.x1-b.x0);
+    return ix>0.4*mw && iy>-Math.max(tol,0.25*mw); }   // Lücke bis ¼ der Code-Breite = derselbe Code                   // gleiche Spalte/Zeile, angrenzende Linien
+  function finish(cl){ const list=Object.entries(cl.votes).sort((a,b)=>b[1]-a[1]);
+    const top=list[0][1], sec=(list[1]||[0,0])[1];
+    cl.list=list; cl.sure = sec===0 ? top>=2 : (top>=3 && top>=2*sec); return cl; }
+  function cluster(hits,tol){
+    const cls=[];
+    for(const h of hits){
+      let c=cls.find(c=>overlap(c.box,h,tol));
+      if(!c){ c={box:{x0:h.x0,x1:h.x1,y0:h.y0,y1:h.y1},votes:{}}; cls.push(c); }
+      c.votes[h.s]=(c.votes[h.s]||0)+1; const b=c.box; b.x0=Math.min(b.x0,h.x0); b.x1=Math.max(b.x1,h.x1); b.y0=Math.min(b.y0,h.y0); b.y1=Math.max(b.y1,h.y1);
+    }
+    for(let i=0;i<cls.length;i++) for(let j=i+1;j<cls.length;j++) if(overlap(cls[i].box,cls[j].box,tol)){   // Bereiche zusammenführen
+      const a=cls[i],b=cls.splice(j,1)[0]; for(const k in b.votes) a.votes[k]=(a.votes[k]||0)+b.votes[k];
+      a.box={x0:Math.min(a.box.x0,b.box.x0),x1:Math.max(a.box.x1,b.box.x1),y0:Math.min(a.box.y0,b.box.y0),y1:Math.max(a.box.y1,b.box.y1)}; j=i; }
+    return cls.map(finish);
+  }
+  function decodeCanvas(c,{N=0,both=true}={}){
     const g=c.getContext('2d',{willReadFrequently:true}); const {width:W,height:H}=c; const d=g.getImageData(0,0,W,H).data;
     const gray=new Uint8Array(W*H); for(let i=0,p=0;i<W*H;i++,p+=4) gray[i]=(d[p]*77+d[p+1]*150+d[p+2]*29)>>8;
-    const v=scan(gray,W,H,false), v2=scan(gray,W,H,true); for(const k in v2) v[k]=(v[k]||0)+v2[k];
-    return v;
+    const n=M=>N||Math.max(60,Math.min(320,Math.round(M/6)));   // Linie etwa alle 6 Pixel
+    let hits=scan(gray,W,H,false,n(H)), tol=3*H/n(H);
+    if(!hits.length&&both){ hits=scan(gray,W,H,true,n(W)); hits=hits.map(h=>({s:h.s,x0:h.y0,x1:h.y1,y0:h.x0,y1:h.x1})); tol=3*W/n(W);
+      return cluster(hits,tol).map(c=>({...c,box:{x0:c.box.y0,x1:c.box.y1,y0:c.box.x0,y1:c.box.x1}})); }
+    return cluster(hits,tol).sort((a,b)=>(a.box.y0-b.box.y0)||(a.box.x0-b.box.x0));
   }
-  // Ergebnis: Kandidaten (nur 6- oder 10-stellige Zahlen), sortiert nach Stimmen; sicher = klare Mehrheit
-  function rank(v){
-    const list=Object.entries(v).filter(e=>/^\d{6}(\d{4})?$/.test(e[0])).sort((a,b)=>b[1]-a[1]);
-    const sure = list.length>0 && list[0][1]>=3 && list[0][1]>=2*((list[1]||[0,0])[1]) ;
-    return {list, sure};
-  }
-  function decodeCanvas(c){ return rank(votesCanvas(c)); }
-  return {decodeCanvas, votesCanvas, rank};
+  return {decodeCanvas, finish, overlap, VALID};
 })();
-let lastEngine='', lastSize='';
-function scaled(src,w,h,max,rot){ const k=Math.min(1,max/Math.max(w,h)); const W=Math.round(w*k),H=Math.round(h*k);
-  const c=document.createElement('canvas'); c.width=rot?H:W; c.height=rot?W:H; const g=c.getContext('2d',{willReadFrequently:true});
-  if(rot){ g.translate(H,0); g.rotate(Math.PI/2); } g.drawImage(src,0,0,W,H); return c; }
-// Rückgabe {sure:[code]} oder {cands:[[code,stimmen],...]}
-async function decodeFile(file){
-  let bmp; try{ bmp=await createImageBitmap(file); }catch(e){ lastEngine='Bild nicht lesbar'; return {cands:[]}; }
-  const w=bmp.width,h=bmp.height; lastSize=`${w}×${h}`; lastEngine='Code 39';
-  const votes={};
-  for(const max of [1600,1000,2400,4096,700]){
-    const v=C39.votesCanvas(scaled(bmp,w,h,max,false)); for(const k in v) votes[k]=(votes[k]||0)+v[k];
-    const r=C39.rank(votes); if(r.sure) return {sure:[r.list[0][0]]};
+
+let detector=null, lastSize='';
+async function getDetector(){
+  if(detector) return detector;
+  if('BarcodeDetector' in window){ try{ detector=new BarcodeDetector(); return detector; }catch(e){} }
+  return null;
+}
+function scaled(src,w,h,max){ const k=Math.min(1,max/Math.max(w,h)); const c=document.createElement('canvas');
+  c.width=Math.round(w*k); c.height=Math.round(h*k); c.getContext('2d',{willReadFrequently:true}).drawImage(src,0,0,c.width,c.height); return c; }
+function mergeInto(all,cl){                       // Bereich in Liste einfügen oder mit gleichem Bereich zusammenlegen
+  const o=all.find(a=>C39.overlap(a.box,cl.box,0));
+  if(!o){ all.push(cl); return; }
+  for(const k in cl.votes) o.votes[k]=(o.votes[k]||0)+cl.votes[k]; C39.finish(o);
+}
+// Alle Strich-Codes eines Bildes: Liste von Bereichen {list:[[code,stimmen]], sure, box}
+async function decodeImage(src,w,h,scales){
+  const all=[];
+  for(const max of scales){
+    const c=scaled(src,w,h,max), k=w/c.width;
+    for(const cl of C39.decodeCanvas(c)){ const b=cl.box; cl.box={x0:b.x0*k,x1:b.x1*k,y0:b.y0*k,y1:b.y1*k}; mergeInto(all,cl); }
+    if(all.length && all.every(c=>c.sure)) break;
   }
-  const cands=C39.rank(votes).list.slice(0,4);
-  const ok=c=>/^\d{6}(\d{4})?$/.test(c);
-  const det=await getDetector();
-  if(det){ lastEngine+=' + BarcodeDetector';
-    for(const src of [bmp,scaled(bmp,w,h,1600,false)]){ try{ (await det.detect(src)).map(x=>x.rawValue.trim()).filter(ok).forEach(c=>{ if(!cands.some(e=>e[0]===c)) cands.push([c,'BD']); }); }catch(e){} } }
-  if(!cands.length){
-    try{ if(!window.ZXing) await loadScript(ZXING_URL); }catch(e){ lastEngine+=' + ZXing nicht geladen'; return {cands}; }
-    lastEngine+=' + ZXing'; const Z=window.ZXing, hints=new Map(); hints.set(Z.DecodeHintType.TRY_HARDER,true);
-    const reader=new Z.MultiFormatReader(); reader.setHints(hints);
-    outer: for(const max of [1600,1000,2400]) for(const rot of [false,true]){
-      try{ const lum=new Z.HTMLCanvasElementLuminanceSource(scaled(bmp,w,h,max,rot));
-        const res=reader.decode(new Z.BinaryBitmap(new Z.HybridBinarizer(lum)),hints); const t=res&&res.getText().trim(); if(t&&ok(t)){ cands.push([t,'ZX']); break outer; } }catch(e){} }
-  }
-  return {cands};
+  const det=await getDetector();                   // Chrome-Leser als zusätzliche Stimme (3 Stimmen)
+  if(det){ try{ for(const r of await det.detect(src)){ const t=(r.rawValue||'').trim(); if(!C39.VALID.test(t)) continue;
+      const bb=r.boundingBox; mergeInto(all,C39.finish({votes:{[t]:3},box:{x0:bb.x,x1:bb.x+bb.width,y0:bb.y,y1:bb.y+bb.height}})); } }catch(e){} }
+  return all;
 }
 async function onPhoto(e){
   const f=e.target.files[0]; e.target.value=''; if(!f) return;
   toast('Lese Code …');
-  const res=await decodeFile(f);
-  if(res.cands && res.cands.length){ beep(false); openSheet('pick',{cands:res.cands}); return; }
-  const codes=res.sure||[];
-  if(!codes.length){ beep(false); toast(`Kein Code gefunden (${lastEngine}, Bild ${lastSize}). Strich-Code quer, scharf, Etikett etwa halbe Bildbreite – oder Nummer eintippen.`,'err'); return; }
-  codes.sort((a,b)=>a.replace(/\D/g,'').length-b.replace(/\D/g,'').length);
-  let n=0; for(const c of [...new Set(codes)]) if(handleCode(c,'Scan')) n++;
-  if(n>1) toast(`${n} Codes übernommen`);
+  let bmp; try{ bmp=await createImageBitmap(f); }catch(_){ toast('Bild nicht lesbar.','err'); return; }
+  lastSize=`${bmp.width}×${bmp.height}`;
+  const areas=await decodeImage(bmp,bmp.width,bmp.height,[1600,2800]);
+  if(!areas.length){ beep(false); toast(`Kein Code gefunden (Bild ${lastSize}). Strich-Code quer und scharf – oder Nummer eintippen.`,'err'); return; }
+  takeAreas(areas,'Scan');
 }
-$('#photo').addEventListener('change',onPhoto); $('#gallery').addEventListener('change',onPhoto);
+function takeAreas(areas,quelle){                // sichere Codes übernehmen (erst RMNr, dann Aktivitäten), unsichere nachfragen
+  const sure=[...new Set(areas.filter(a=>a.sure).map(a=>a.list[0][0]))].sort((a,b)=>a.length-b.length);
+  let n=0; for(const c of sure) if(handleCode(c,quelle)) n++;
+  const unsure=areas.filter(a=>!a.sure && !sure.includes(a.list[0][0]));
+  if(unsure.length){ beep(false); openSheet('pick',{cands:unsure[0].list.slice(0,4),queue:unsure.slice(1)}); }
+  else if(n>1) toast(`${n} Codes übernommen: ${sure.join(', ')}`);
+}
+$('#photo').addEventListener('change',onPhoto);
 
 /* ===== Live-Scan ===== */
-let stream=null, liveTimer=null, liveLast={code:'',t:0}, liveCand='';
+let stream=null, liveTimer=null, livePrev=new Set(), liveDone=new Map();
 async function startLive(){
-  const det=await getDetector();
-  if(!window.isSecureContext||!navigator.mediaDevices){ toast('Live-Scan geht nur, wenn die Seite über https geöffnet ist (nicht als Datei vom Handy).','err'); return; }
-  try{ stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1920}}}); }
+  if(!curUnit()){ toast('Zuerst Ort und Einheit wählen.','err'); return; }
+  if(!window.isSecureContext||!navigator.mediaDevices){ toast('Live-Scan geht nur, wenn die Seite über https geöffnet ist (GitHub-Seite).','err'); return; }
+  try{ stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080}}}); }
   catch(e){ toast(`Kamera abgelehnt (${e.name||'Fehler'}). In Chrome: Schloss-Symbol → Berechtigungen → Kamera erlauben.`,'err'); return; }
   openSheet('live'); const v=$('#vid'); v.srcObject=stream; await v.play().catch(()=>{});
+  livePrev=new Set(); liveDone=new Map(); const det=await getDetector(); const crop=document.createElement('canvas'); const cg=crop.getContext('2d',{willReadFrequently:true});
   const tick=async()=>{ if(!stream) return;
-    try{ let codes=[];
-      if(v.videoWidth){ const r=C39.decodeCanvas(scaled(v,v.videoWidth,v.videoHeight,1280,false));
-        if(r.sure){ const c=r.list[0][0]; if(c===liveCand){ codes=[c]; liveCand=''; } else liveCand=c; } }
-      const now=Date.now();
-      codes.sort((a,b)=>a.length-b.length).forEach(c=>{
-        if(c===liveLast.code && now-liveLast.t<2500) return; liveLast={code:c,t:now};
-        const ok=handleCode(c,'Scan'); const st=$('#liveStat'); if(st) st.textContent=(ok?'✓ ':'✗ ')+c; renderLiveCtx(); }); }catch(e){}
-    liveTimer=setTimeout(tick,250); };
-  tick();
+    try{ const W=v.videoWidth,H=v.videoHeight;
+      if(W){ // nur der Rahmen (80 % × 35 % der Bildmitte), in voller Auflösung
+        const sx=W*0.1, sy=H*0.325, sw=W*0.8, sh=H*0.35, k=Math.min(1,1400/sw);
+        crop.width=Math.round(sw*k); crop.height=Math.round(sh*k); cg.drawImage(v,sx,sy,sw,sh,0,0,crop.width,crop.height);
+        let codes=[];
+        if(det){ try{ codes=(await det.detect(crop)).map(r=>(r.rawValue||'').trim()).filter(t=>C39.VALID.test(t)); }catch(e){} }
+        if(!codes.length) codes=C39.decodeCanvas(crop,{both:false}).filter(a=>a.sure).map(a=>a.list[0][0]);
+        const now=Date.now(), conf=codes.filter(c=>livePrev.has(c));      // gleich in zwei Bildern hintereinander
+        livePrev=new Set(codes);
+        conf.sort((a,b)=>a.length-b.length).forEach(c=>{
+          if(liveDone.has(c)) return; liveDone.set(c,now);   // je Live-Sitzung nur einmal
+          const ok=handleCode(c,'Scan'); const st=$('#liveStat'); if(st) st.textContent=(ok?'✓ ':'✗ ')+c; renderLiveCtx(); });
+      } }catch(e){}
+    liveTimer=setTimeout(tick,120); };
+  renderLiveCtx(); tick();
 }
 function stopLive(){ clearTimeout(liveTimer); if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; } }
 
@@ -534,13 +559,13 @@ const SHEETS={
       <div class="muted" style="font-size:14px">Datei an Claude schicken. Die Pxx werden bei der Auswertung zugeordnet.</div>`;
   },
   pick(){ const d=sheetData;
-    return `<div class="sh"><h2>Unsicher gelesen</h2><button class="ghost small" data-act="close">Abbrechen</button></div>
+    return `<div class="sh"><h2>Unsicher gelesen${d.queue&&d.queue.length?` (noch ${d.queue.length})`:''}</h2><button class="ghost small" data-act="close">Abbrechen</button></div>
       <p class="muted" style="margin:0">Mit der Zahl unter dem Strich-Code vergleichen und den richtigen Code antippen.</p>
-      <div class="keys c2" style="grid-template-columns:1fr 1fr">${d.cands.map(c=>`<button data-act="pickCode" data-v="${esc(c[0])}"><span class="k" style="font-size:20px">${esc(c[0])}</span><span class="d">${typeof c[1]==='number'?c[1]+' Linien':'anderer Leser'}</span></button>`).join('')}</div>
+      <div class="keys c2" style="grid-template-columns:1fr 1fr">${d.cands.map(c=>`<button data-act="pickCode" data-v="${esc(c[0])}"><span class="k" style="font-size:20px">${esc(c[0])}</span><span class="d">${c[1]} Stimmen</span></button>`).join('')}</div>
       <form class="entry" id="pickForm" style="display:grid;grid-template-columns:1fr auto;gap:8px"><input id="pickIn" inputmode="numeric" placeholder="oder richtige Nummer eintippen" class="code"><button type="submit">OK</button></form>`; },
   live(){ return `<div class="sh"><h2>Live-Scan</h2><button class="primary small" data-act="close">Fertig</button></div>
-      <div id="liveCtx" class="row"></div><video id="vid" playsinline muted></video>
-      <div id="liveStat" class="code" style="font-size:20px;min-height:28px">Code ins Bild halten …</div>`; }
+      <div id="liveCtx" class="row"></div><div class="vwrap"><video id="vid" playsinline muted></video><div class="guide"></div></div>
+      <div id="liveStat" class="code" style="font-size:20px;min-height:28px">Strich-Code quer in den Rahmen halten …</div>`; }
 };
 function renderLiveCtx(){ const el=$('#liveCtx'); const u=curUnit(), o=curOrt(); if(el&&u) el.innerHTML=`${tagHTML(o.code)} <span class="chip">${esc(u.nr)} · ${esc(u.typ)} ${esc(u.pxx)}</span> <span class="chip">${u.teile.length} Etiketten</span>`; }
 function curUnitById(id){ const r=run(); for(const o of r?.orte||[]) for(const u of o.einheiten) if(u.id===id) return u; return null; }
@@ -563,7 +588,6 @@ function render(){
   <div class="dock"><div class="wrap">
     <div class="ctx">${u?`Scannen in ${tagHTML(o.code)} <b>${esc(u.nr)}</b> ${esc(u.typ)} ${u.pxx?`<span class="code">${esc(u.pxx)}</span>`:''}`:'Kein Ziel gewählt'}</div>
     <div class="scanrow"><button class="primary" data-act="photo">Foto-Scan</button><button data-act="live">Live-Scan</button></div>
-    <button class="small ghost" data-act="gallery" style="min-height:30px">Foto aus Galerie lesen</button>
     <form class="entry" id="entryForm"><input id="entry" placeholder="RMNr, Barcode oder Teil-Nr." autocomplete="off" enterkeyhint="done"><button type="submit">OK</button></form>
     <div class="acts"><button class="small" data-act="newOrt">+ Ort</button><button class="small" data-act="newUnit" ${o?'':'disabled'}>+ Einheit</button>
       <button class="small" data-act="extra" data-v="ohne" ${u?'':'disabled'}>ohne Et.</button><button class="small" data-act="extra" data-v="fremd" ${u?'':'disabled'}>Fremd</button></div>
@@ -610,7 +634,7 @@ function lineHTML(u,t){
 function homeHTML(){
   const runs=[...S.rundgaenge].sort((a,b)=>b.start-a.start);
   return `<main class="wrap" style="padding-top:18px">
-    <div><div class="eyebrow">Materialfluss Ist-Aufnahme</div><h1>Scan-Rundgang</h1><div class="muted" style="font-size:13px">Version 5 · 23.10.2026</div></div>
+    <div><div class="eyebrow">Materialfluss Ist-Aufnahme</div><h1>Scan-Rundgang</h1><div class="muted" style="font-size:13px">Version 6 · 23.10.2026</div></div>
     ${storageOk?'':`<div class="banner err">Speicher im Browser nicht verfügbar. Nach jedem Rundgang exportieren.</div>`}
     <button class="primary" data-act="newRun" style="min-height:56px;font-size:19px">Neuer Rundgang</button>
     ${runs.map(r=>{ const us=allUnits(r); const n=us.reduce((a,[,u])=>a+u.teile.length,0);
@@ -675,8 +699,7 @@ document.addEventListener('click',async e=>{
       save(); closeSheet(); render(); break; }
     case 'delExtra': { const u=curUnitById(b.dataset.u); u[b.dataset.k].splice(+v,1); save(); render(); break; }
     case 'photo': $('#photo').click(); break;
-    case 'gallery': $('#gallery').click(); break;
-    case 'pickCode': closeSheet(); handleCode(v,'Scan bestätigt'); break;
+    case 'pickCode': { const q=sheetData.queue||[]; closeSheet(); handleCode(v,'Scan bestätigt'); if(q.length) openSheet('pick',{cands:q[0].list.slice(0,4),queue:q.slice(1)}); break; }
     case 'live': if(!curUnit()){ toast('Zuerst Ort und Einheit wählen.','err'); return; } startLive(); break;
   }
 });
