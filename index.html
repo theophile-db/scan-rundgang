@@ -78,7 +78,7 @@ header.top .row{flex-wrap:nowrap;flex-shrink:0}
 .uh .px.none{background:var(--surface2);color:var(--muted);font-weight:500}
 .uh .sum{margin-left:auto;font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
 .lines{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
-.ln{display:grid;grid-template-columns:1fr auto;gap:4px 8px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);min-width:0}
+.ln{display:grid;grid-template-columns:1fr auto auto;gap:4px 8px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);min-width:0}
 .ln.new{animation:flash 1.2s ease-out}
 @keyframes flash{from{background:var(--accent-soft)}to{background:var(--surface)}}
 .ln .main{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;min-width:0;cursor:pointer}
@@ -88,6 +88,7 @@ header.top .row{flex-wrap:nowrap;flex-shrink:0}
 .ln .meta{grid-column:1/-1;display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:14px}
 .ln .hint{grid-column:1/-1;font-size:14px;color:var(--muted);display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .ln.soft{background:var(--surface2)}
+.trash{color:var(--err);border-color:transparent}
 .xbtn{min-height:40px;min-width:48px;padding:4px 10px;font-family:var(--f-code);font-weight:700}
 .prev{border:1px dashed var(--line);border-radius:8px;padding:8px 10px;font-size:15px;display:flex;flex-direction:column;gap:6px}
 
@@ -118,6 +119,13 @@ header.top .row{flex-wrap:nowrap;flex-shrink:0}
 .keys button .d{font-size:11.5px;color:var(--muted);font-weight:500;text-align:center}
 .keys button[aria-pressed="true"] .k,.keys button[aria-pressed="true"] .d{color:inherit}
 .keys.proz button .k{color:var(--proz)} .keys.lagi button .k{color:var(--lagi)} .keys.ext button .k{color:var(--ext)}
+.picklist{display:flex;flex-direction:column;gap:8px}
+.pk{display:flex;flex-direction:column;gap:6px}
+.pkmain{display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:56px;text-align:left}
+.pkmain .code{font-size:22px;font-weight:700}
+.pkmain .d{font-size:14px;color:var(--muted);font-weight:500}
+.pkmain:disabled{opacity:.55}
+.pk.unsure .pkmain{border-color:var(--warn);background:var(--warn-soft)}
 .preview{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 
 /* Start */
@@ -126,7 +134,7 @@ header.top .row{flex-wrap:nowrap;flex-shrink:0}
 .banner{border-radius:8px;padding:10px 12px;font-size:15px}
 .banner.warn{background:var(--warn-soft);color:var(--warn)}
 .banner.err{background:var(--err-soft);color:var(--err)}
-.toast{position:fixed;left:50%;transform:translateX(-50%);top:calc(76px + env(safe-area-inset-top,0px));z-index:40;max-width:min(560px,calc(100% - 32px));
+.toast{display:flex;align-items:center;position:fixed;left:50%;transform:translateX(-50%);top:calc(76px + env(safe-area-inset-top,0px));z-index:40;max-width:min(560px,calc(100% - 32px));
   background:var(--ink);color:var(--surface);padding:10px 14px;border-radius:10px;font-weight:600;box-shadow:0 6px 24px rgba(0,0,0,.25)}
 .toast.err{background:var(--err);color:#fff}
 .toast.warn{background:var(--warn);color:#fff}
@@ -210,6 +218,12 @@ function beep(ok=true){
     const o=AC.createOscillator(), g=AC.createGain(); o.frequency.value = ok?1320:330; o.type='square';
     g.gain.value=.06; o.connect(g); g.connect(AC.destination); o.start(); o.stop(AC.currentTime+(ok?.07:.22)); }catch(e){}
   try{ navigator.vibrate && navigator.vibrate(ok?40:[70,50,70]); }catch(e){}
+}
+let undoFn=null;
+function undoToast(msg,fn){
+  let t=$('#toast'); if(!t){ t=document.createElement('div'); t.id='toast'; document.body.appendChild(t); }
+  undoFn=fn; t.className='toast'; t.innerHTML=`${esc(msg)} <button class="small" data-act="undo" style="margin-left:10px;min-height:32px">Rückgängig</button>`; t.hidden=false;
+  clearTimeout(toastT); toastT=setTimeout(()=>{ t.hidden=true; undoFn=null; },5000);
 }
 function toast(msg,kind=''){
   let t=$('#toast'); if(!t){ t=document.createElement('div'); t.id='toast'; document.body.appendChild(t); }
@@ -413,12 +427,11 @@ async function onPhoto(e){
   if(!areas.length){ beep(false); toast(`Kein Code gefunden (Bild ${lastSize}). Strich-Code quer und scharf – oder Nummer eintippen.`,'err'); return; }
   takeAreas(areas,'Scan');
 }
-function takeAreas(areas,quelle){                // sichere Codes übernehmen (erst RMNr, dann Aktivitäten), unsichere nachfragen
-  const sure=[...new Set(areas.filter(a=>a.sure).map(a=>a.list[0][0]))].sort((a,b)=>a.length-b.length);
-  let n=0; for(const c of sure) if(handleCode(c,quelle)) n++;
-  const unsure=areas.filter(a=>!a.sure && !sure.includes(a.list[0][0]));
-  if(unsure.length){ beep(false); openSheet('pick',{cands:unsure[0].list.slice(0,4),queue:unsure.slice(1)}); }
-  else if(n>1) toast(`${n} Codes übernommen: ${sure.join(', ')}`);
+function takeAreas(areas,quelle){                // genau ein sicherer Code -> direkt übernehmen; sonst Auswahlliste
+  const seen=new Set(); const list=areas.filter(a=>{ const t=a.list[0][0]; if(seen.has(t)) return false; seen.add(t); return true; })
+    .sort((a,b)=>a.list[0][0].length-b.list[0][0].length);
+  if(list.length===1 && list[0].sure){ handleCode(list[0].list[0][0],quelle); return; }
+  beep(true); openSheet('pick',{areas:list});
 }
 $('#photo').addEventListener('change',onPhoto);
 
@@ -430,7 +443,7 @@ async function startLive(){
   try{ stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080}}}); }
   catch(e){ toast(`Kamera abgelehnt (${e.name||'Fehler'}). In Chrome: Schloss-Symbol → Berechtigungen → Kamera erlauben.`,'err'); return; }
   openSheet('live'); const v=$('#vid'); v.srcObject=stream; await v.play().catch(()=>{});
-  livePrev=new Set(); liveDone=new Map(); const det=await getDetector(); const crop=document.createElement('canvas'); const cg=crop.getContext('2d',{willReadFrequently:true});
+  livePrev=new Set(); liveDone=new Map(); renderLivePend(); const det=await getDetector(); const crop=document.createElement('canvas'); const cg=crop.getContext('2d',{willReadFrequently:true});
   const tick=async()=>{ if(!stream) return;
     try{ const W=v.videoWidth,H=v.videoHeight;
       if(W){ // nur der Rahmen (80 % × 35 % der Bildmitte), in voller Auflösung
@@ -441,12 +454,19 @@ async function startLive(){
         if(!codes.length) codes=C39.decodeCanvas(crop,{both:false}).filter(a=>a.sure).map(a=>a.list[0][0]);
         const now=Date.now(), conf=codes.filter(c=>livePrev.has(c));      // gleich in zwei Bildern hintereinander
         livePrev=new Set(codes);
-        conf.sort((a,b)=>a.length-b.length).forEach(c=>{
-          if(liveDone.has(c)) return; liveDone.set(c,now);   // je Live-Sitzung nur einmal
-          const ok=handleCode(c,'Scan'); const st=$('#liveStat'); if(st) st.textContent=(ok?'✓ ':'✗ ')+c; renderLiveCtx(); });
+        let neu=false; conf.forEach(c=>{ if(!liveDone.has(c)){ liveDone.set(c,now); neu=true; } });
+        if(neu){ beep(true); renderLivePend(); }
       } }catch(e){}
     liveTimer=setTimeout(tick,120); };
   renderLiveCtx(); tick();
+}
+function renderLivePend(){
+  const el=$('#livePend'); if(!el) return; const u=curUnit();
+  const codes=[...liveDone.keys()].sort((a,b)=>liveDone.get(b)-liveDone.get(a));
+  el.innerHTML=codes.map(c=>{ const done=!!u&&(c.length===6?u.teile.some(t=>t.rmnr===c):u.teile.some(t=>t.rmnr===c.slice(0,6)&&t.akt.some(x=>x.akvp===c.slice(6))));
+    return `<div class="pk"><button class="pkmain" data-act="pickCode" data-v="${esc(c)}" ${done?'disabled':''}><span class="code">${esc(c)}</span>
+      <span class="d">${done?'✓ in Einheit':(c.length===10?'Aktivität '+esc(c.slice(6)):(S.register[c]?esc(S.register[c]):'antippen = übernehmen'))}</span></button></div>`; }).join('');
+  renderLiveCtx();
 }
 function stopLive(){ clearTimeout(liveTimer); if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; } }
 
@@ -534,7 +554,7 @@ const SHEETS={
   line(){ const d=sheetData; const u=curUnitById(d.uid); const t=u?.teile.find(x=>x.id===d.tid); if(!t) return '';
     const inList=!t.teil||inSL(t.teil); const info=TEILE.find(x=>x[0]===t.teil);
     return `<div class="sh"><h2><span class="code">${esc(t.rmnr||'ohne RMNr')}</span></h2><button class="ghost small" data-act="close">Schließen</button></div>
-      <label class="f">Teil-Nr. (ohne P30962-MZB-)<input id="lTeil" list="teileList" value="${esc(t.teil)}" placeholder="z. B. 100-S22" autocapitalize="characters" ${t.teil?'':'data-autofocus'}></label>
+      <label class="f">Teil-Nr. (ohne P30962-MZB-)<input id="lTeil" list="teileList" value="${esc(t.teil)}" placeholder="z. B. 100-S22" autocapitalize="characters"></label>
       <div class="muted" style="font-size:14px">${info?esc(info[1])+' · Stückliste '+esc(info[2]):(inList?'':'<span class="chip warn">nicht in Stückliste</span>')}${t.rmnr?' · wird für '+esc(t.rmnr)+' gemerkt':''}</div>
       <div class="grid2"><label class="f">Menge Etikett<input id="lMet" inputmode="numeric" value="${esc(t.met)}" placeholder="leer = 1"></label>
         <label class="f">Menge gezählt<input id="lMgz" inputmode="numeric" value="${esc(t.mgz)}" placeholder="leer = wie Etikett"></label></div>
@@ -558,14 +578,19 @@ const SHEETS={
       <textarea class="csv" id="csvText" readonly>${esc(csv.slice(1))}</textarea>
       <div class="muted" style="font-size:14px">Datei an Claude schicken. Die Pxx werden bei der Auswertung zugeordnet.</div>`;
   },
-  pick(){ const d=sheetData;
-    return `<div class="sh"><h2>Unsicher gelesen${d.queue&&d.queue.length?` (noch ${d.queue.length})`:''}</h2><button class="ghost small" data-act="close">Abbrechen</button></div>
-      <p class="muted" style="margin:0">Mit der Zahl unter dem Strich-Code vergleichen und den richtigen Code antippen.</p>
-      <div class="keys c2" style="grid-template-columns:1fr 1fr">${d.cands.map(c=>`<button data-act="pickCode" data-v="${esc(c[0])}"><span class="k" style="font-size:20px">${esc(c[0])}</span><span class="d">${c[1]} Stimmen</span></button>`).join('')}</div>
-      <form class="entry" id="pickForm" style="display:grid;grid-template-columns:1fr auto;gap:8px"><input id="pickIn" inputmode="numeric" placeholder="oder richtige Nummer eintippen" class="code"><button type="submit">OK</button></form>`; },
-  live(){ return `<div class="sh"><h2>Live-Scan</h2><button class="primary small" data-act="close">Fertig</button></div>
+  pick(){ const d=sheetData; const u=curUnit(); const inU=c=>!!u&&(c.length===6?u.teile.some(t=>t.rmnr===c):u.teile.some(t=>t.rmnr===c.slice(0,6)&&t.akt.some(x=>x.akvp===c.slice(6))));
+    return `<div class="sh"><h2>${d.areas.length>1?d.areas.length+' Codes gelesen':'Code gelesen'}</h2><button class="primary small" data-act="close">Fertig</button></div>
+      <p class="muted" style="margin:0">Code antippen = übernehmen. Mit der Zahl unter dem Strich-Code vergleichen.</p>
+      <div class="picklist">${d.areas.map((a,i)=>{ const top=a.list[0][0], done=inU(top);
+        return `<div class="pk ${a.sure?'':'unsure'}"><button class="pkmain" data-act="pickCode" data-v="${esc(top)}" ${done?'disabled':''}>
+            <span class="code">${esc(top)}</span><span class="d">${done?'✓ in Einheit':(top.length===10?'Aktivität '+esc(top.slice(6)):(S.register[top]?esc(S.register[top]):'RMNr'))}${a.sure?'':' · unsicher'}</span></button>
+          ${!a.sure&&a.list.length>1?`<div class="row">${a.list.slice(1,4).map(c=>`<button class="small" data-act="pickCode" data-v="${esc(c[0])}">${esc(c[0])}</button>`).join('')}</div>`:''}</div>`; }).join('')}</div>
+      <form class="entry" id="pickForm" style="display:grid;grid-template-columns:1fr auto;gap:8px"><input id="pickIn" inputmode="numeric" placeholder="oder Nummer eintippen" class="code"><button type="submit">OK</button></form>`; },
+  live(){ return `<div class="sh"><h2>Live-Scan</h2><button class="small" data-act="close">✕ Beenden</button></div>
       <div id="liveCtx" class="row"></div><div class="vwrap"><video id="vid" playsinline muted></video><div class="guide"></div></div>
-      <div id="liveStat" class="code" style="font-size:20px;min-height:28px">Strich-Code quer in den Rahmen halten …</div>`; }
+      <div id="liveStat" class="muted">Strich-Code quer in den Rahmen halten. Gelesene Codes erscheinen unten – antippen zum Übernehmen.</div>
+      <div id="livePend" class="picklist"></div>
+      <button data-act="close" style="min-height:52px">Live-Scan beenden</button>`; }
 };
 function renderLiveCtx(){ const el=$('#liveCtx'); const u=curUnit(), o=curOrt(); if(el&&u) el.innerHTML=`${tagHTML(o.code)} <span class="chip">${esc(u.nr)} · ${esc(u.typ)} ${esc(u.pxx)}</span> <span class="chip">${u.teile.length} Etiketten</span>`; }
 function curUnitById(id){ const r=run(); for(const o of r?.orte||[]) for(const u of o.einheiten) if(u.id===id) return u; return null; }
@@ -625,6 +650,7 @@ function lineHTML(u,t){
   return `<li class="ln" data-line="${t.id}">
     <div class="main" data-act="editLine" data-u="${u.id}" data-t="${t.id}"><span class="rm">${esc(t.rmnr||'—')}</span><span class="tl ${t.teil?'':'empty'}">${esc(t.teil||'Teil-Nr. antippen')}</span></div>
     <button class="xbtn small" data-act="toggleX" data-u="${u.id}" data-t="${t.id}" aria-pressed="${t.x}" aria-label="x auf Etikett">x</button>
+    <button class="xbtn small ghost trash" data-act="quickDel" data-u="${u.id}" data-t="${t.id}" aria-label="Zeile löschen"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     ${(t.akt.length||t.met||t.mgz||t.bem||notInList||t.quelle!=='Scan')?`<div class="meta">${t.akt.map(a=>`<span class="chip akt">${esc(a.akvp)}</span>`).join('')}
       ${t.met?`<span class="chip">Etikett ${esc(t.met)}</span>`:''}${t.mgz?`<span class="chip">gezählt ${esc(t.mgz)}</span>`:''}
       ${notInList?'<span class="chip warn">nicht in Stückliste</span>':''}${t.quelle!=='Scan'?`<span class="chip">${esc(t.quelle)}</span>`:''}${t.bem?`<span class="muted">${esc(t.bem)}</span>`:''}</div>`:''}
@@ -634,7 +660,7 @@ function lineHTML(u,t){
 function homeHTML(){
   const runs=[...S.rundgaenge].sort((a,b)=>b.start-a.start);
   return `<main class="wrap" style="padding-top:18px">
-    <div><div class="eyebrow">Materialfluss Ist-Aufnahme</div><h1>Scan-Rundgang</h1><div class="muted" style="font-size:13px">Version 6 · 23.10.2026</div></div>
+    <div><div class="eyebrow">Materialfluss Ist-Aufnahme</div><h1>Scan-Rundgang</h1><div class="muted" style="font-size:13px">Version 7 · 23.10.2026</div></div>
     ${storageOk?'':`<div class="banner err">Speicher im Browser nicht verfügbar. Nach jedem Rundgang exportieren.</div>`}
     <button class="primary" data-act="newRun" style="min-height:56px;font-size:19px">Neuer Rundgang</button>
     ${runs.map(r=>{ const us=allUnits(r); const n=us.reduce((a,[,u])=>a+u.teile.length,0);
@@ -651,7 +677,7 @@ function homeHTML(){
 }
 
 /* ===== Aktionen ===== */
-document.addEventListener('submit',e=>{ if(e.target.id==='pickForm'){ e.preventDefault(); const v=$('#pickIn').value; closeSheet(); handleCode(v,'Eingabe'); return; } if(e.target.id==='entryForm'){ e.preventDefault(); const i=$('#entry'); const v=i.value; if(handleCode(v,'Eingabe')) i.value=''; setTimeout(()=>$('#entry')?.focus(),0); } });
+document.addEventListener('submit',e=>{ if(e.target.id==='pickForm'){ e.preventDefault(); const v=$('#pickIn').value; if(handleCode(v,'Eingabe')) renderSheet(); return; } if(e.target.id==='entryForm'){ e.preventDefault(); const i=$('#entry'); const v=i.value; if(handleCode(v,'Eingabe')) i.value=''; setTimeout(()=>$('#entry')?.focus(),0); } });
 document.addEventListener('click',async e=>{
   const b=e.target.closest('[data-act]'); if(!b) return; const a=b.dataset.act, v=b.dataset.v;
   const r=run();
@@ -687,6 +713,9 @@ document.addEventListener('click',async e=>{
     case 'delEinheit': if(sheetData.confirmDel){ const o=curOrt(); o.einheiten=o.einheiten.filter(x=>x.id!==sheetData.uid); if(S.cur.uid===sheetData.uid) S.cur.uid=o.einheiten.at(-1)?.id; save(); closeSheet(); render(); } else { grabEinheit(); sheetData.confirmDel=true; renderSheet(); } break;
     case 'setUnitPxx': { const u=curUnitById(b.dataset.u); u.pxx=v; save(); render(); toast(`Einheit = ${v}`); break; }
     case 'takeOver': takeOver(); break;
+    case 'quickDel': { const u=curUnitById(b.dataset.u); const i=u.teile.findIndex(x=>x.id===b.dataset.t); if(i<0) break;
+      const [t]=u.teile.splice(i,1); save(); render(); undoToast(`${t.rmnr||t.teil} gelöscht`,()=>{ u.teile.splice(i,0,t); save(); render(); }); break; }
+    case 'undo': if(undoFn){ const f=undoFn; undoFn=null; f(); const tt=$('#toast'); if(tt) tt.hidden=true; } break;
     case 'toggleX': { const u=curUnitById(b.dataset.u); const t=u.teile.find(x=>x.id===b.dataset.t); t.x=!t.x; save(); render(); break; }
     case 'editLine': openSheet('line',{uid:b.dataset.u,tid:b.dataset.t}); break;
     case 'lineX': { const t=lineObj(); grabLine(t); t.x=!t.x; save(); renderSheet(); render(); break; }
@@ -699,7 +728,7 @@ document.addEventListener('click',async e=>{
       save(); closeSheet(); render(); break; }
     case 'delExtra': { const u=curUnitById(b.dataset.u); u[b.dataset.k].splice(+v,1); save(); render(); break; }
     case 'photo': $('#photo').click(); break;
-    case 'pickCode': { const q=sheetData.queue||[]; closeSheet(); handleCode(v,'Scan bestätigt'); if(q.length) openSheet('pick',{cands:q[0].list.slice(0,4),queue:q.slice(1)}); break; }
+    case 'pickCode': if(sheet==='live'){ handleCode(v,'Scan'); renderLivePend(); } else { handleCode(v,'Scan'); renderSheet(); } break;
     case 'live': if(!curUnit()){ toast('Zuerst Ort und Einheit wählen.','err'); return; } startLive(); break;
   }
 });
