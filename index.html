@@ -478,14 +478,14 @@ async function saveFile(name, text, mime){
   if(!window.claude){ try{ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type:mime})); a.download=name; document.body.appendChild(a); a.click(); a.remove(); toast('Gespeichert: '+name); return true; }catch(e){} }
   toast('Speichern hier nicht möglich – Text kopieren.','warn'); return false;
 }
-const COLS=['Rundgang','Zeit','Ort','Bereich','Einheit-Nr','Einheit-Typ','Pxx','Gesamt gezählt','Lage','Art','Barcode','RMNr','AkvP','Teil','Menge Etikett','Menge gezählt','Versand (x)','Bemerkung','Quelle'];
+const COLS=['Rundgang','Datum','Uhrzeit','Ort','Bereich','Einheit-Nr','Einheit-Typ','Pxx','Gesamt gezählt','Lage','Art','Barcode','RMNr','AkvP','Teil','Menge Etikett','Menge gezählt','Versand (x)','Bemerkung','Quelle'];
 const csvCell = v=>{ v=String(v??''); return /[;"\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; };
 function csvFor(runs){
   const L=[COLS.join(';')];
   for(const r of runs){ const rn=runName(r);
     for(const o of r.orte) for(const u of o.einheiten){
-      const base=[rn,null,o.code,bereich(o.code),u.nr,u.typ,u.pxx,u.gesamt,u.lage];
-      const row=(zeit,art,rest)=>{ const b=[...base]; b[1]=fDate(zeit)+' '+fHMS(zeit); L.push([...b,art,...rest].map(csvCell).join(';')); };
+      const base=[rn,null,null,o.code,bereich(o.code),u.nr,u.typ,u.pxx,u.gesamt,u.lage];
+      const row=(zeit,art,rest)=>{ const b=[...base]; b[1]=fDate(zeit); b[2]=fHMS(zeit); L.push([...b,art,...rest].map(csvCell).join(';')); };
       row(u.zeit,'Einheit',['','','','','','','',u.bem,'']);
       for(const t of u.teile){
         row(t.zeit,'Teil',[t.barcode,t.rmnr,'',t.teil,t.met,t.mgz,t.x?'x':'',t.bem,t.quelle]);
@@ -608,6 +608,7 @@ function render(){
   <main class="wrap" style="padding-top:14px">
     ${storageOk?'':`<div class="banner err">Speicher im Browser nicht verfügbar. Daten gehen beim Schließen verloren – am Ende unbedingt exportieren.</div>`}
     ${!r.orte.length?`<div class="panel"><h2>Erster Ort</h2><p class="muted" style="margin:0">Ort wählen, dann Einheit (Palette, Wagen, Regal, Boden), dann Etiketten scannen.</p><button class="primary" data-act="newOrt">Ort wählen</button></div>`:''}
+    ${r.orte.length?`<button class="primary" data-act="newOrt" style="min-height:52px">+ Neuer Ort</button>`:''}
     ${[...r.orte].reverse().map(oo=>ortHTML(r,oo)).join('')}
   </main>
   <div class="dock"><div class="wrap">
@@ -660,7 +661,7 @@ function lineHTML(u,t){
 function homeHTML(){
   const runs=[...S.rundgaenge].sort((a,b)=>b.start-a.start);
   return `<main class="wrap" style="padding-top:18px">
-    <div><div class="eyebrow">Materialfluss Ist-Aufnahme</div><h1>Scan-Rundgang</h1><div class="muted" style="font-size:13px">Version 7 · 23.10.2026</div></div>
+    <div><div class="eyebrow">Materialfluss Ist-Aufnahme</div><h1>Scan-Rundgang</h1><div class="muted" style="font-size:13px">Version 8 · 24.10.2026</div></div>
     ${storageOk?'':`<div class="banner err">Speicher im Browser nicht verfügbar. Nach jedem Rundgang exportieren.</div>`}
     <button class="primary" data-act="newRun" style="min-height:56px;font-size:19px">Neuer Rundgang</button>
     ${runs.map(r=>{ const us=allUnits(r); const n=us.reduce((a,[,u])=>a+u.teile.length,0);
