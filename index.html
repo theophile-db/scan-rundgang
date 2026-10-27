@@ -78,7 +78,7 @@ header.top .row{flex-wrap:nowrap;flex-shrink:0}
 .uh .px.none{background:var(--surface2);color:var(--muted);font-weight:500}
 .uh .sum{margin-left:auto;font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
 .lines{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
-.ln{display:grid;grid-template-columns:1fr auto auto;gap:4px 8px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);min-width:0}
+.ln{display:grid;grid-template-columns:1fr auto auto auto;gap:4px 8px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);min-width:0}
 .ln.new{animation:flash 1.2s ease-out}
 @keyframes flash{from{background:var(--accent-soft)}to{background:var(--surface)}}
 .ln .main{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;min-width:0;cursor:pointer}
@@ -140,7 +140,8 @@ header.top .row{flex-wrap:nowrap;flex-shrink:0}
 .toast.warn{background:var(--warn);color:#fff}
 textarea.csv{font-family:var(--f-code);font-size:12px;min-height:180px;white-space:pre;overflow:auto}
 video{display:block;width:100%;height:auto;border-radius:10px;background:#000}
-.vwrap{position:relative}
+.vwrap{position:relative;overflow:hidden;border-radius:10px}
+#vid{transform-origin:50% 50%}
 .guide{position:absolute;left:10%;top:32.5%;width:80%;height:35%;border:3px solid var(--accent);border-radius:8px;box-shadow:0 0 0 999px rgba(0,0,0,.35);pointer-events:none}
 details>summary{cursor:pointer;font-weight:600}
 @media (max-width:420px){ .keys.c8{grid-template-columns:repeat(4,1fr)} .keys.c5{grid-template-columns:repeat(4,1fr)} }
@@ -437,17 +438,36 @@ $('#photo').addEventListener('change',onPhoto);
 
 /* ===== Live-Scan ===== */
 let stream=null, liveTimer=null, livePrev=new Set(), liveDone=new Map();
+let liveZoom=2, hwZoom=1, swZoom=1; try{ liveZoom=+localStorage.getItem(KEY+'.zoom')||2; }catch(e){}
+async function openCamera(){
+  const base={facingMode:{ideal:'environment'},width:{ideal:2560},height:{ideal:1440}};   // mehr Pixel für den digitalen Zoom
+  try{ return await navigator.mediaDevices.getUserMedia({video:{...base,zoom:true}}); }   // zoom:true = Zoom-Steuerung erlauben
+  catch(e){ return await navigator.mediaDevices.getUserMedia({video:base}); }
+}
+// Zoom: zuerst Kamera-Zoom (Sensor, beste Qualität), sonst digital (Bildausschnitt)
+async function applyZoom(z){
+  liveZoom=z; try{ localStorage.setItem(KEY+'.zoom',String(z)); }catch(e){}
+  const tr=stream&&stream.getVideoTracks()[0]; let cap={}; try{ cap=(tr&&tr.getCapabilities&&tr.getCapabilities())||{}; }catch(e){}
+  hwZoom=1;
+  if(cap.zoom&&cap.zoom.max>1){ const t=Math.min(cap.zoom.max,Math.max(cap.zoom.min||1,z));
+    try{ await tr.applyConstraints({advanced:[{zoom:t}]}); hwZoom=t; }catch(e){ hwZoom=1; } }
+  swZoom=Math.max(1,z/hwZoom);
+  const v=$('#vid'); if(v) v.style.transform=`scale(${swZoom})`;
+  document.querySelectorAll('[data-act=liveZoom]').forEach(b=>b.setAttribute('aria-pressed',String(+b.dataset.v===z)));
+  const zi=$('#zoomInfo'); if(zi) zi.textContent = z===1?'':(hwZoom>1?(swZoom>1?'Kamera + digital':'Kamera-Zoom'):'digital');
+}
 async function startLive(){
   if(!curUnit()){ toast('Zuerst Ort und Einheit wählen.','err'); return; }
   if(!window.isSecureContext||!navigator.mediaDevices){ toast('Live-Scan geht nur, wenn die Seite über https geöffnet ist (GitHub-Seite).','err'); return; }
-  try{ stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1920},height:{ideal:1080}}}); }
+  try{ stream=await openCamera(); }
   catch(e){ toast(`Kamera abgelehnt (${e.name||'Fehler'}). In Chrome: Schloss-Symbol → Berechtigungen → Kamera erlauben.`,'err'); return; }
-  openSheet('live'); const v=$('#vid'); v.srcObject=stream; await v.play().catch(()=>{});
+  openSheet('live'); const v=$('#vid'); v.srcObject=stream; await v.play().catch(()=>{}); await applyZoom(liveZoom);
   livePrev=new Set(); liveDone=new Map(); renderLivePend(); const det=await getDetector(); const crop=document.createElement('canvas'); const cg=crop.getContext('2d',{willReadFrequently:true});
   const tick=async()=>{ if(!stream) return;
     try{ const W=v.videoWidth,H=v.videoHeight;
-      if(W){ // nur der Rahmen (80 % × 35 % der Bildmitte), in voller Auflösung
-        const sx=W*0.1, sy=H*0.325, sw=W*0.8, sh=H*0.35, k=Math.min(1,1400/sw);
+      if(W){ // nur der Rahmen (80 % × 35 % des sichtbaren Bildes), in voller Auflösung
+        const vw=W/swZoom, vh=H/swZoom, vx=(W-vw)/2, vy=(H-vh)/2;
+        const sx=vx+vw*0.1, sy=vy+vh*0.325, sw=vw*0.8, sh=vh*0.35, k=Math.min(1,1400/sw);
         crop.width=Math.round(sw*k); crop.height=Math.round(sh*k); cg.drawImage(v,sx,sy,sw,sh,0,0,crop.width,crop.height);
         let codes=[];
         if(det){ try{ codes=(await det.detect(crop)).map(r=>(r.rawValue||'').trim()).filter(t=>C39.VALID.test(t)); }catch(e){} }
@@ -468,7 +488,7 @@ function renderLivePend(){
       <span class="d">${done?'✓ in Einheit':(c.length===10?'Aktivität '+esc(c.slice(6)):(S.register[c]?esc(S.register[c]):'antippen = übernehmen'))}</span></button></div>`; }).join('');
   renderLiveCtx();
 }
-function stopLive(){ clearTimeout(liveTimer); if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; } }
+function stopLive(){ clearTimeout(liveTimer); if(stream){ stream.getTracks().forEach(t=>t.stop()); stream=null; } hwZoom=1; swZoom=1; }
 
 /* ===== Speichern / Export ===== */
 let dl=null; (async()=>{ try{ if(window.claude?.use) dl=await claude.use('downloads'); }catch(e){} })();
@@ -478,7 +498,13 @@ async function saveFile(name, text, mime){
   if(!window.claude){ try{ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type:mime})); a.download=name; document.body.appendChild(a); a.click(); a.remove(); toast('Gespeichert: '+name); return true; }catch(e){} }
   toast('Speichern hier nicht möglich – Text kopieren.','warn'); return false;
 }
-const COLS=['Rundgang','Datum','Uhrzeit','Ort','Bereich','Einheit-Nr','Einheit-Typ','Pxx','Gesamt gezählt','Lage','Art','Barcode','RMNr','AkvP','Teil','Menge Etikett','Menge gezählt','Versand (x)','Bemerkung','Quelle'];
+// Datei direkt an Gmail, Drive, WhatsApp … geben (Chrome Android, nur auf der https-Seite)
+function shareOk(name,mime){ try{ return !window.claude && !!navigator.canShare && navigator.canShare({files:[new File(['x'],name,{type:mime})]}); }catch(e){ return false; } }
+async function shareFile(name,text,mime){
+  try{ await navigator.share({files:[new File([text],name,{type:mime})],title:name}); }
+  catch(e){ if(e?.name!=='AbortError') toast('Teilen nicht möglich – „Speichern“ nutzen.','err'); }
+}
+const COLS=['Rundgang','Datum','Uhrzeit','Ort','Bereich','Einheit-Nr','Einheit-Typ','Pxx','Gesamt gezählt','Lage','Art','Barcode','RMNr','AkvP','Teil','Menge Etikett','Menge gezählt','Versand (x)','QS','Bemerkung','Quelle'];
 const csvCell = v=>{ v=String(v??''); return /[;"\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; };
 function csvFor(runs){
   const L=[COLS.join(';')];
@@ -486,13 +512,13 @@ function csvFor(runs){
     for(const o of r.orte) for(const u of o.einheiten){
       const base=[rn,null,null,o.code,bereich(o.code),u.nr,u.typ,u.pxx,u.gesamt,u.lage];
       const row=(zeit,art,rest)=>{ const b=[...base]; b[1]=fDate(zeit); b[2]=fHMS(zeit); L.push([...b,art,...rest].map(csvCell).join(';')); };
-      row(u.zeit,'Einheit',['','','','','','','',u.bem,'']);
+      row(u.zeit,'Einheit',['','','','','','','','',u.bem,'']);
       for(const t of u.teile){
-        row(t.zeit,'Teil',[t.barcode,t.rmnr,'',t.teil,t.met,t.mgz,t.x?'x':'',t.bem,t.quelle]);
-        for(const a of t.akt) row(a.zeit,'Aktivität',[a.barcode,t.rmnr,a.akvp,t.teil,'','','','',a.quelle||'Scan']);
+        row(t.zeit,'Teil',[t.barcode,t.rmnr,'',t.teil,t.met,t.mgz,t.x?'x':'',t.qs?'QS':'',t.bem,t.quelle]);
+        for(const a of t.akt) row(a.zeit,'Aktivität',[a.barcode,t.rmnr,a.akvp,t.teil,'','','','','',a.quelle||'Scan']);
       }
-      for(const w of u.ohne) row(w.zeit,'ohne Etikett',['','','',w.teil||'','',w.n,'',w.text,'Hand']);
-      for(const f of u.fremd) row(f.zeit,'Fremdprojekt',['','','','','',f.n,'',f.text||'','Hand']);
+      for(const w of u.ohne) row(w.zeit,'ohne Etikett',['','','',w.teil||'','',w.n,'','',w.text,'Hand']);
+      for(const f of u.fremd) row(f.zeit,'Fremdprojekt',['','','','','',f.n,'','',f.text||'','Hand']);
     }
   }
   return '﻿'+L.join('\r\n');
@@ -558,7 +584,8 @@ const SHEETS={
       <div class="muted" style="font-size:14px">${info?esc(info[1])+' · Stückliste '+esc(info[2]):(inList?'':'<span class="chip warn">nicht in Stückliste</span>')}${t.rmnr?' · wird für '+esc(t.rmnr)+' gemerkt':''}</div>
       <div class="grid2"><label class="f">Menge Etikett<input id="lMet" inputmode="numeric" value="${esc(t.met)}" placeholder="leer = 1"></label>
         <label class="f">Menge gezählt<input id="lMgz" inputmode="numeric" value="${esc(t.mgz)}" placeholder="leer = wie Etikett"></label></div>
-      <button data-act="lineX" aria-pressed="${t.x}" class="xbtn">x auf Etikett (Versand)</button>
+      <div class="grid2"><button data-act="lineX" aria-pressed="${t.x}" class="xbtn">x auf Etikett (Versand)</button>
+        <button data-act="lineQS" aria-pressed="${!!t.qs}" class="xbtn">QS auf Etikett (Qualität geprüft)</button></div>
       <label class="f">Bemerkung<input id="lBem" value="${esc(t.bem)}" placeholder="z. B. gekantet, Etikett halb lesbar"></label>
       ${t.akt.length?`<div class="row">${t.akt.map((a,i)=>`<span class="chip akt">${esc(a.akvp)} · ${fHM(a.zeit)} <button class="small ghost" data-act="delAkt" data-v="${i}" aria-label="Aktivität löschen">✕</button></span>`).join('')}</div>`:''}
       <div class="row"><button class="primary" data-act="saveLine" style="flex:1">Speichern</button><button class="danger" data-act="delLine">${d.confirmDel?'Wirklich löschen?':'Löschen'}</button></div>`;
@@ -574,7 +601,7 @@ const SHEETS={
     const name=r?runFile(r)+'.csv':'Alle Rundgänge Scan.csv'; sheetData.csv=csv; sheetData.name=name;
     return `<div class="sh"><h2>Export</h2><button class="ghost small" data-act="close">Schließen</button></div>
       <div><span class="code">${esc(name)}</span><div class="muted" style="font-size:14px">${csv.split('\n').length-1} Zeilen · Trenner ; · UTF-8</div></div>
-      <div class="row"><button class="primary" data-act="doSave" style="flex:1">CSV speichern</button><button data-act="doCopy">Text kopieren</button></div>
+      <div class="row">${shareOk(name,'text/csv')?'<button class="primary" data-act="doShare" style="flex:1">CSV teilen (Mail, Drive …)</button>':''}<button class="${shareOk(name,'text/csv')?'':'primary'}" data-act="doSave" style="flex:1">CSV speichern</button><button data-act="doCopy">Text kopieren</button></div>
       <textarea class="csv" id="csvText" readonly>${esc(csv.slice(1))}</textarea>
       <div class="muted" style="font-size:14px">Datei an Claude schicken. Die Pxx werden bei der Auswertung zugeordnet.</div>`;
   },
@@ -588,6 +615,7 @@ const SHEETS={
       <form class="entry" id="pickForm" style="display:grid;grid-template-columns:1fr auto;gap:8px"><input id="pickIn" inputmode="numeric" placeholder="oder Nummer eintippen" class="code"><button type="submit">OK</button></form>`; },
   live(){ return `<div class="sh"><h2>Live-Scan</h2><button class="small" data-act="close">✕ Beenden</button></div>
       <div id="liveCtx" class="row"></div><div class="vwrap"><video id="vid" playsinline muted></video><div class="guide"></div></div>
+      <div class="row"><div class="seg" style="flex:1">${[1,2,3].map(z=>`<button data-act="liveZoom" data-v="${z}" aria-pressed="${liveZoom===z}">${z}×</button>`).join('')}</div><span id="zoomInfo" class="muted" style="font-size:13px;min-width:90px"></span></div>
       <div id="liveStat" class="muted">Strich-Code quer in den Rahmen halten. Gelesene Codes erscheinen unten – antippen zum Übernehmen.</div>
       <div id="livePend" class="picklist"></div>
       <button data-act="close" style="min-height:52px">Live-Scan beenden</button>`; }
@@ -651,6 +679,7 @@ function lineHTML(u,t){
   return `<li class="ln" data-line="${t.id}">
     <div class="main" data-act="editLine" data-u="${u.id}" data-t="${t.id}"><span class="rm">${esc(t.rmnr||'—')}</span><span class="tl ${t.teil?'':'empty'}">${esc(t.teil||'Teil-Nr. antippen')}</span></div>
     <button class="xbtn small" data-act="toggleX" data-u="${u.id}" data-t="${t.id}" aria-pressed="${t.x}" aria-label="x auf Etikett">x</button>
+    <button class="xbtn small" data-act="toggleQS" data-u="${u.id}" data-t="${t.id}" aria-pressed="${!!t.qs}" aria-label="QS-Vermerk auf Etikett">QS</button>
     <button class="xbtn small ghost trash" data-act="quickDel" data-u="${u.id}" data-t="${t.id}" aria-label="Zeile löschen"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     ${(t.akt.length||t.met||t.mgz||t.bem||notInList||t.quelle!=='Scan')?`<div class="meta">${t.akt.map(a=>`<span class="chip akt">${esc(a.akvp)}</span>`).join('')}
       ${t.met?`<span class="chip">Etikett ${esc(t.met)}</span>`:''}${t.mgz?`<span class="chip">gezählt ${esc(t.mgz)}</span>`:''}
@@ -661,7 +690,7 @@ function lineHTML(u,t){
 function homeHTML(){
   const runs=[...S.rundgaenge].sort((a,b)=>b.start-a.start);
   return `<main class="wrap" style="padding-top:18px">
-    <div><div class="eyebrow">Materialfluss Ist-Aufnahme</div><h1>Scan-Rundgang</h1><div class="muted" style="font-size:13px">Version 8 · 24.10.2026</div></div>
+    <div><div class="eyebrow">Materialfluss Ist-Aufnahme</div><h1>Scan-Rundgang</h1><div class="muted" style="font-size:13px">Version 9 · 27.10.2026</div></div>
     ${storageOk?'':`<div class="banner err">Speicher im Browser nicht verfügbar. Nach jedem Rundgang exportieren.</div>`}
     <button class="primary" data-act="newRun" style="min-height:56px;font-size:19px">Neuer Rundgang</button>
     ${runs.map(r=>{ const us=allUnits(r); const n=us.reduce((a,[,u])=>a+u.teile.length,0);
@@ -672,7 +701,7 @@ function homeHTML(){
     <details class="panel" open><summary>Sicherung und Register</summary>
       <p class="muted" style="margin:0;font-size:15px">Die Daten liegen nur in diesem Browser. Sicherung als JSON, um sie auf ein anderes Gerät zu bringen. Register: ${Object.keys(S.register).length} RMNr mit Teil-Nr.</p>
       <div class="muted code" style="font-size:12.5px">Technik: https ${window.isSecureContext?'ja':'nein'} · BarcodeDetector ${'BarcodeDetector' in window?'ja':'nein'} · Kamera-API ${navigator.mediaDevices?'ja':'nein'}</div>
-      <div class="row"><button class="small" data-act="exportAll">Alle als CSV</button><button class="small" data-act="backup">Sicherung speichern</button><button class="small" data-act="restore">Sicherung laden</button></div>
+      <div class="row"><button class="small" data-act="exportAll">Alle als CSV</button><button class="small" data-act="backup">Sicherung speichern</button>${shareOk('a.json','application/json')?'<button class="small" data-act="shareBackup">Sicherung teilen</button>':''}<button class="small" data-act="restore">Sicherung laden</button></div>
     </details>
   </main>`;
 }
@@ -693,6 +722,8 @@ document.addEventListener('click',async e=>{
     case 'exportAll': openSheet('export',{}); break;
     case 'endRun': if(!r.end) r.end=Date.now(); save(); render(); openSheet('export',{rid:r.id}); break;
     case 'doSave': saveFile(sheetData.name, sheetData.csv, 'text/csv'); break;
+    case 'doShare': shareFile(sheetData.name, sheetData.csv, 'text/csv'); break;
+    case 'shareBackup': { const d=new Date(); shareFile(`Scan-Rundgang Sicherung ${p2(d.getDate())}-${p2(d.getMonth()+1)} ${fFile(d)}.json`, JSON.stringify(S), 'application/json'); break; }
     case 'doCopy': { const t=sheetData.csv.slice(1); try{ await navigator.clipboard.writeText(t); toast('Kopiert'); }catch(_){ const ta=$('#csvText'); ta.focus(); ta.select(); toast('Text markiert – jetzt kopieren.'); } break; }
     case 'backup': { const d=new Date(); saveFile(`Scan-Rundgang Sicherung ${p2(d.getDate())}-${p2(d.getMonth()+1)} ${fFile(d)}.json`, JSON.stringify(S,null,1), 'application/json'); }; break;
     case 'restore': $('#jsonin').click(); break;
@@ -717,8 +748,10 @@ document.addEventListener('click',async e=>{
     case 'quickDel': { const u=curUnitById(b.dataset.u); const i=u.teile.findIndex(x=>x.id===b.dataset.t); if(i<0) break;
       const [t]=u.teile.splice(i,1); save(); render(); undoToast(`${t.rmnr||t.teil} gelöscht`,()=>{ u.teile.splice(i,0,t); save(); render(); }); break; }
     case 'undo': if(undoFn){ const f=undoFn; undoFn=null; f(); const tt=$('#toast'); if(tt) tt.hidden=true; } break;
+    case 'toggleQS': { const u=curUnitById(b.dataset.u); const t=u.teile.find(x=>x.id===b.dataset.t); t.qs=!t.qs; save(); render(); break; }
     case 'toggleX': { const u=curUnitById(b.dataset.u); const t=u.teile.find(x=>x.id===b.dataset.t); t.x=!t.x; save(); render(); break; }
     case 'editLine': openSheet('line',{uid:b.dataset.u,tid:b.dataset.t}); break;
+    case 'lineQS': { const t=lineObj(); grabLine(t); t.qs=!t.qs; save(); renderSheet(); render(); break; }
     case 'lineX': { const t=lineObj(); grabLine(t); t.x=!t.x; save(); renderSheet(); render(); break; }
     case 'saveLine': { const t=lineObj(); grabLine(t); if(t.rmnr && t.teil){ S.register[t.rmnr]=t.teil; forEachTeil(x=>{ if(x.rmnr===t.rmnr && !x.teil) x.teil=t.teil; }); } save(); closeSheet(); render(); break; }
     case 'delLine': if(sheetData.confirmDel){ const u=curUnitById(sheetData.uid); u.teile=u.teile.filter(x=>x.id!==sheetData.tid); save(); closeSheet(); render(); } else { grabLine(lineObj()); sheetData.confirmDel=true; renderSheet(); } break;
@@ -729,6 +762,7 @@ document.addEventListener('click',async e=>{
       save(); closeSheet(); render(); break; }
     case 'delExtra': { const u=curUnitById(b.dataset.u); u[b.dataset.k].splice(+v,1); save(); render(); break; }
     case 'photo': $('#photo').click(); break;
+    case 'liveZoom': applyZoom(+v); break;
     case 'pickCode': if(sheet==='live'){ handleCode(v,'Scan'); renderLivePend(); } else { handleCode(v,'Scan'); renderSheet(); } break;
     case 'live': if(!curUnit()){ toast('Zuerst Ort und Einheit wählen.','err'); return; } startLive(); break;
   }
@@ -753,7 +787,7 @@ function saveEinheit(){
 }
 function takeOver(){
   const u=curUnit(); const p=lastByPxx(u.pxx,S.cur.rid); if(!p) return; const now=Date.now();
-  p.u.teile.forEach((t,i)=>u.teile.push({id:uid(),zeit:now+i,barcode:t.barcode,rmnr:t.rmnr,teil:t.teil,met:t.met,mgz:t.mgz,x:t.x,bem:t.bem,quelle:'übernommen',akt:[]}));
+  p.u.teile.forEach((t,i)=>u.teile.push({id:uid(),zeit:now+i,barcode:t.barcode,rmnr:t.rmnr,teil:t.teil,met:t.met,mgz:t.mgz,x:t.x,qs:!!t.qs,bem:t.bem,quelle:'übernommen',akt:[]}));
   p.u.ohne.forEach(w=>u.ohne.push({...w,zeit:now})); p.u.fremd.forEach(w=>u.fremd.push({...w,zeit:now}));
   if(!u.gesamt) u.gesamt=p.u.gesamt; u.bem=[u.bem,'unverändert wie '+fDM(p.r.start)].filter(Boolean).join(' · ');
   save(); render(); toast(`${p.u.teile.length} Zeilen übernommen – bei Abweichung einzeln ändern.`);
