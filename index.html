@@ -1,4 +1,5 @@
-<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><style>[hidden]{display:none!important}body{margin:0}img{max-width:100%}</style></head><body><title>Scan-Rundgang</title>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Scan-Rundgang P30962</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
@@ -78,7 +79,7 @@ header.top .row{flex-wrap:nowrap;flex-shrink:0}
 .uh .px.none{background:var(--surface2);color:var(--muted);font-weight:500}
 .uh .sum{margin-left:auto;font-size:14px;color:var(--muted);font-variant-numeric:tabular-nums}
 .lines{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
-.ln{display:grid;grid-template-columns:1fr auto auto auto;gap:4px 8px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);min-width:0}
+.ln{display:grid;grid-template-columns:1fr auto auto auto auto;gap:4px 8px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);min-width:0}
 .ln.new{animation:flash 1.2s ease-out}
 @keyframes flash{from{background:var(--accent-soft)}to{background:var(--surface)}}
 .ln .main{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;min-width:0;cursor:pointer}
@@ -90,6 +91,12 @@ header.top .row{flex-wrap:nowrap;flex-shrink:0}
 .ln.soft{background:var(--surface2)}
 .trash{color:var(--err);border-color:transparent}
 .xbtn{min-height:40px;min-width:48px;padding:4px 10px;font-family:var(--f-code);font-weight:700}
+.ln{grid-template-columns:1fr auto auto auto auto}
+.chip.pz{background:var(--accent-soft);color:var(--accent);border-color:transparent;font-family:var(--f-code);font-size:13px}
+.chip.gf{background:#f3d9f7;color:#7b2d8e;border-color:transparent}
+.keys.pz button .k{font-size:14px}
+.keys.pz button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.keys.pz button.done{background:var(--accent-soft)}
 .prev{border:1px dashed var(--line);border-radius:8px;padding:8px 10px;font-size:15px;display:flex;flex-direction:column;gap:6px}
 
 /* Untere Leiste */
@@ -155,7 +162,7 @@ details>summary{cursor:pointer;font-weight:600}
 
 <script>
 /* ===== Stammdaten ===== */
-const TEILE = [];   // [Teil kurz, Bezeichnung, Anzahl] aus Stuecklisten_P30962_alle_Plaene.csv
+const TEILE = [["100-1","lfm Stufenschutzprofil L70/70",6],["100-10.1","Versteifungsblech",8],["100-12","Wandrippe 80 hoch",90],["100-12A","Wandrippe 80 hoch",1],["100-13","Verankerungsplatte 150/250",100],["100-15","HUS-Schraube M10",450],["100-16","Schrägstütze U50/101/50",55],["100-17","Verankerungsplatte 200/250",55],["100-2.1","Wandrippe 80 hoch",163],["100-2.1A","Wandrippe 80 hoch",35],["100-20.01","Rinnenblech RT= 315",1],["100-20.02","Rinnenblech RT= 315",1],["100-20.03","Rinnenblech RT= 315",1],["100-20.04","Rinnenblech RT= 315",1],["100-20.05","Rinnenblech RT= 315",1],["100-20.06","Rinnenblech RT= 315",1],["100-20.07","Rinnenblech RT= 315",1],["100-20.08","Rinnenblech RT= 315",1],["100-20.09","Rinnenblech RT= 315",1],["100-20.10","Rinnenblech RT= 315",1],["100-20.11","Rinnenblech RT= 315",1],["100-20.13","Rinnenblech RT= 315",1],["100-20.14","Rinnenblech RT= 315",1],["100-20.15","Rinnenblech RT= 315",1],["100-20.16","Rinnenblech RT= 315",1],["100-20.17","Rinnenblech RT= 315",1],["100-20.18","Rinnenblech RT= 315",1],["100-20.19","Rinnenblech RT= 315",1],["100-20.21","Rinnenblech RT= 315",1],["100-20.23","Rinnenblech RT= 315",1],["100-20.24","Rinnenblech RT= 315",1],["100-20.25","Rinnenblech RT= 315",1],["100-20.26","Rinnenblech RT= 315",1],["100-20.27","Rinnenblech RT= 315",1],["100-21.1","Rinnenspange",90],["100-23A","Rinnenkorb",109],["100-23B","Rinnenkorb",6],["100-25","Hebeprofil für Rinne mit Knick",48],["100-2B","Versteifungsrippe TS",12],["100-2C","Versteifungsrippe Rohrsitzb.",16],["100-4","Transportbügel U50/19/50",48],["100-5.1","Richtblech 100/200",48],["100-5.2","kg Richtblech 100/200",150],["100-50","UWS Smartlight Adapter",5],["100-51","Schlauchbinder 17-29VA",5],["100-52","lfm Kabelschutzschlauch",150],["100-6","Versteifungsblech bei Treppe",9],["100-7","Bolzen",28],["100-80","Erdungslasche für M8",12],["100-BST","Baustellentafel Deutschland",1],["100-BSTR","Baustellentransparent",1],["100-S01A","Wandelement ohne Stehstufe",1],["100-S01B","Wandelement ohne Stehstufe",1],["100-S02","Wandelement ohne Stehstufe",1],["100-S03","Wandelement ohne Stehstufe",1],["100-S04","Wandelement ohne Stehstufe",1],["100-S05A","Wandelement ohne Stehstufe",1],["100-S05B","Wandelement ohne Stehstufe",1],["100-S06","Wandel.o.St.geprägt u. gefärbt",1],["100-S07","Wandel.o.St.geprägt u. gefärbt",1],["100-S08","Wandelement ohne Stehstufe",1],["100-S09","Wandelement ohne Stehstufe",1],["100-S10","Wandelement ohne Stehstufe",1],["100-S11","Wandelement ohne Stehstufe",1],["100-S13","Wandelement ohne Stehstufe",1],["100-S14","Wandelement ohne Stehstufe",1],["100-S15","Wandelement ohne Stehstufe",1],["100-S16","Treppenwandelement gepr.+gef.",1],["100-S17","Wandelement ohne Stehstufe",1],["100-S18","Wandelement ohne Stehstufe",1],["100-S19","Wandelement ohne Stehstufe",1],["100-S21","Wandelement ohne Stehstufe",1],["100-S23","Wandelement ohne Stehstufe",1],["100-S24","Wandelement ohne Stehstufe",1],["100-S25","Treppenwandelement gepr.+gef.",1],["100-S26","Wandel.o.St.geprägt u. gefärbt",1],["100-S27","Wandel.o.St.geprägt u. gefärbt",1],["100-U06","Wandelement unten gefärbt",1],["100-U07","Wandelement unten gefärbt",1],["100-U26","Wandelement unten gefärbt",1],["100-U27","Wandelement unten gefärbt",1],["110-12","Verankerungsprofil",10],["110-12A","Verankerungsprofil",1],["110-13","Verankerungsplatte 150/250",15],["110-15","HUS-Schraube M10",80],["110-16","Schrägstütze U50/101/50",10],["110-17","Verankerungsplatte 200/250",10],["110-1A.1","Beckenkopfblech (S12)",1],["110-1A.2","Beckenkopfblech (S22)",1],["110-1A.3","Beckenkopfblech (S20)",1],["110-1B.1","Randblech (S12)",1],["110-1B.2","Randblech (S22)",1],["110-1B.3","Randblech (S20)",1],["110-1C.1","Schablonenblech (S12)",1],["110-1C.2","Schablonenblech (S22)",1],["110-1C.3","Schablonenblech (S20)",1],["110-1F.1","Bodenrahmen (S12)",1],["110-1F.2","Bodenrahmen (S22)",1],["110-1F.3","Bodenrahmen (S20)",1],["110-1G.1","lfm Versteifungsblech (S12)",3],["110-1G.2","lfm Versteifungsblech (S22)",4],["110-1G.3","lfm Versteifungsblech (S20)",2],["110-1H","Knotenblech bei Bodenrahmen",20],["110-2.1","Wandrippe 79",20],["110-20A.1","Rinnenwandblech (S12)",1],["110-20A.2","Rinnenwandblech (S22)",1],["110-20A.3","Rinnenwandblech (S20)",1],["110-20B.1","Rinnenblech (hinten) (S12)",1],["110-20B.2","Rinnenblech (hinten) (S22)",1],["110-20B.3","Rinnenblech (hinten) (S20)",1],["110-20C.1","Rinnenbodenblech (S12)",1],["110-20C.2","Rinnenbodenblech (S22)",1],["110-20C.3","Rinnenbodenblech (S20)",1],["110-20D.1","Rinnenanschlußrahmen (S12)",1],["110-20D.2","Rinnenanschlußrahmen (S22)",1],["110-20D.3","Rinnenanschlußrahmen (S20)",1],["110-20E.1","Rinnenabschlußblech (S12)",1],["110-20E.2","Rinnenabschlußblech (S22)",1],["110-20E.3","Rinnenabschlußblech (S20)",1],["110-20F.1","Rinnenblechrostauflage (S12)",1],["110-20F.2","Rinnenblechrostauflage (S22)",1],["110-20F.3","Rinnenblechrostauflage (S20)",1],["110-20G.1","Rinnenrandblech (S12)",1],["110-20G.2","Rinnenrandblech (S22)",1],["110-20G.3","Rinnenrandblech (S20)",1],["110-20H.1","Rinnenanschlußrahmen (S12)",1],["110-20H.2","Rinnenanschlußrahmen (S22)",1],["110-20H.3","Rinnenanschlußrahmen (S20)",1],["110-20J","Rinnenabschluß - Schablone",6],["110-21.1","Rinnenspange",14],["110-23.1","Rinnenkorb",20],["110-25","Rinnenversteifung U30/40/30",20],["110-26","Distanzblech",20],["110-28","Hebeprofil für runde Wand",6],["110-41","Stützprofil U38/68/38 (5m Lg.)",1],["110-42","lfm Hilfsprofil L30/30",1],["110-43","Schablone bei Wandstoß",6],["110-5.1","Richtblech 100/200",6],["110-5.2","kg Richtblech 100/200",20],["110-S12","Wandelement gerollt",1],["110-S20","Wandelement gerollt",1],["110-S22","Wandelement gerollt",1],["150-1.1","Rinnenablaufkastenblech",6],["150-1.2","Ablaufkastenblech hinten",6],["150-1.3","Ablaufkastenblech vorne",6],["150-1.4","Rohr DN 250",6],["150-1.5","Loser Flansch",6],["150-1.6","Vorschweißbördel",6],["150-4","Profil L50/50",6],["150-5","lfm Montageprofil U38/68/38",6],["160-1","Laubfänger für Rinne 213mm",6],["170-1","Befestigungswinkel aussen",3],["170-2","Befestigungswinkel innen",3],["170-3.1","Bügel",3],["170-3.2","Umlenkblech",3],["175-1","Anschweißwinkel Hinten",1],["175-2","Anschweißwinkel Vorne",1],["175-3.1","Bügel",1],["175-3.2","Umlenkblech",1],["190-28","Abschottung MWE",2],["190-29","Schottdeckel MWE",2],["190-30.1","Messwassertopf",2],["190-30.2","Rohr DN 50 gebogen",2],["190-30.3","Loser Flansch, DIN 2642",2],["190-30.4","Vorschweißbördel, DIN 2642",2],["190-30.5","Befestigungsblech",2],["190-30.6","Befestigungsblock",6],["190-32","Messwasserdeckel inkl.Schraub.",2],["200-2.3","Wandrippe 80 hoch",2],["200-46","Schottblech links",2],["200-47","Schottblech rechts",2],["200-48","Schottblech links",2],["200-49","Schottblech rechts",2],["200-50","Beckenkopfversteifungsblech",4],["200-51","Versteifungsblech",4],["200-NIL01","Nischenleiterelement-Oberteil",1],["200-NIL05","Nischenleiterelement-Oberteil",1],["200-UIL01","Nischenleiterelement-Unterteil",1],["200-UIL05","Nischenleiterelement-Unterteil",1],["210-11","Luftleitung (zu Düse)",3],["210-12","Schweißnippel",3],["210-13","Verschlußblech",3],["210-14","Rückschlagventil 3/8\"",3],["210-16","Rohr DN 150",3],["210-17.1","Rohr DN 150 gebördelt",3],["210-17.2","Loser Flansch, DIN 2642",3],["210-2","Gegenflansch ø240/ø140",3],["210-3","Fächerscheibe DIN 6798",24],["210-4","Sechskantmutter",24],["210-5","Hutmutter",24],["210-6","Kugeldüse mit Deckel u. O-Ring",3],["210-7","O-Ring",3],["210-8","Verengungsdüse 150m3/h",3],["210-9.1","Anschraubplatte 280x280",3],["210-9.2","Gewindestange",12],["210-9.3","Düsenrohr DN 250 zu Düse 1-3",3],["220-1.1","Abkantblech",1],["220-1.10","Versteifung diagonal",1],["220-1.2","Abkantwinkel",2],["220-1.3","Lasche",4],["220-1.4","Compriband",1],["220-1.5","Senkschr. m. Innensk. DIN 7991",4],["220-1.6","konische Beilagscheibe",4],["220-1.7","Lochblechdeckel",1],["220-1.8","Verstärkungsblech",4],["220-1.9","Versteifung diagonal",1],["220-10","Versteifungsrippe U40/100/40",2],["220-11","Versteifungsblech",1],["220-12","Wandrippe 80 hoch",1],["220-13","Wandrippe 80 hoch",3],["220-14","Wandrippe 80 hoch",3],["220-3.1","Rohr DN 300",2],["220-3.2","Vorschweißbördel, DIN 2642",2],["220-3.3","Loser Flansch, DIN 2642",2],["220-5","Versteifungsrippe U29/100/29",4],["220-7","Bolzen",8],["220-8","Wandrippe quer U80/100/80",2],["230-1.1","Winkelstück R-222",1],["230-1.2","Rohr DN 50",1],["230-1.3","Rohrbogen 90°, Typ 3S, DN50",1],["230-1.4","Rohr DN 50",1],["230-1.5","Befestigungsblech f. Rohr",2],["230-1.6","Befestigungsblech f. Rohr",1],["230-2.1","Winkelstück R-222",1],["230-2.2","Rohr DN 50",1],["230-2.3","Rohrbogen 90°, Typ 3S, DN50",1],["230-2.4","Rohr DN 50",1],["230-2.5","Befestigungsblech f. Rohr",1],["230-2.6","Befestigungsblech f. Rohr",1],["230-4","Einströmdüse ø105, 3 Löcher",2],["240-1.1","Massagedüse neu Edelstahl",4],["240-10","lfm Montageprofil U38/68/38",1],["240-12","Schweißnippel",4],["240-13","Rückschlagventil 3/8\"",4],["240-14","Verschlußblech",4],["240-15.1","Luftrohr",1],["240-15.2","Luftrohr",1],["240-15.3","Luftrohr",1],["240-15.4","Luftrohr",1],["240-2.1","Winkelstück R-222",1],["240-2.2","Reduzierstück R-169, DN65/50",1],["240-2.3","Rohr DN 65",1],["240-2.4","Rohrbogen 90°, Typ 3S, DN65",1],["240-2.5","Loser Flansch",1],["240-2.6","Vorschweißbördel",1],["240-3.1","Winkelstück R-222",1],["240-3.2","Reduzierstück R-169, DN65/50",1],["240-3.3","Rohr DN 65",1],["240-3.4","Rohrbogen 90°, Typ 3S, DN65",1],["240-3.5","Loser Flansch",1],["240-3.6","Vorschweißbördel",1],["240-4.1","Winkelstück R-222",1],["240-4.2","Reduzierstück R-169, DN65/50",1],["240-4.3","Rohr DN 65",1],["240-4.4","Rohrbogen 90°, Typ 3S, DN65",1],["240-4.5","Loser Flansch",1],["240-4.6","Vorschweißbördel",1],["240-5.1","Muffe R-201",1],["240-5.2","Reduzierstück R-169, DN65/50",1],["240-5.3","Rohr DN 65",1],["240-5.4","Loser Flansch",1],["240-5.5","Vorschweißbördel",1],["240-8","Befestigunsgblech",4],["240-9","Befestigungsblech",4],["250-1.1","Versteifung (TWx.2)",5],["250-1.4","Bodenrahmen (TWx.2)",5],["250-1.5","Schablonenblech (TWx.2)",5],["250-12","Verankerungsprofil",20],["250-12A","Verankerungsprofil",1],["250-13","Verankerungsplatte 150/250",30],["250-15","HUS-Schraube M10",70],["250-2.1","Wandrippe V80",80],["250-2.1A","Wandrippe V80",5],["250-27","lfm Ankerprofil U50/101/50",23],["250-3","Knotenblech",15],["250-31","Auflagewinkel L50/50",1],["250-4","Transportbügel U50/19/50",10],["250-5.1","Richtblech 100/200",10],["250-5.2","kg Richtblech 100/200",30],["250-D1.1","Inseldeckel gepr.+gef.",1],["250-D2.1","Inseldeckel gepr.+gef.",1],["250-D3.1","Inseldeckel gepr.+gef.",1],["250-D4.1","Inseldeckel gepr.+gef.",1],["250-D5.1","Inseldeckel gepr.+gef.",1],["250-TW1.1","Inselwandelement gerade",1],["250-TW1.2","Inselwandelement rund",1],["250-TW1.3","Inselwandelement gerade",1],["250-TW2.1","Inselwandelement gerade",1],["250-TW2.2","Inselwandelement rund",1],["250-TW2.3","Inselwandelement gerade",1],["250-TW3.1","Inselwandelement gerade",1],["250-TW3.2","Inselwandelement rund",1],["250-TW3.3","Inselwandelement gerade",1],["250-TW4.1","Inselwandelement gerade",1],["250-TW4.2","Inselwandelement rund",1],["250-TW4.3","Inselwandelement gerade",1],["250-TW5.1","Inselwandelement gerade",1],["250-TW5.2","Inselwandelement rund",1],["250-TW5.3","Inselwandelement gerade",1],["260-1.1","Winkelstück R-222",1],["260-1.2","Rohr DN 50",1],["260-1.3","Rohrbogen 90°, Typ 3S, DN50",1],["260-1.4","Rohr DN 50",1],["260-1.5","Befestigungsblech f. Rohr",2],["260-1.6","Befestigungsblech f. Rohr",1],["260-2.1","Winkelstück R-222",1],["260-2.2","Rohr DN 50",1],["260-2.3","Rohrbogen 90°, Typ 3S, DN50",1],["260-2.4","Rohr DN 50",1],["260-2.5","Befestigungsblech f. Rohr",1],["260-2.6","Befestigungsblech f. Rohr",1],["260-4","Einströmdüse ø105, 3 Löcher",2],["290-1.1A","Versteifung (TW6.2)",2],["290-1.1B","Versteifung (TW7.1)",4],["290-1.4A","Bodenrahmen (TW6.2)",1],["290-1.4B","Bodenrahmen (TW7.1)",1],["290-1.5A","Schablonenblech (TW6.2)",1],["290-1.5B","Schablonenblech (TW7.1)",1],["290-12","Verankerungsprofil",10],["290-12A","Verankerungsprofil",1],["290-13","Verankerungsplatte 150/250",30],["290-15","HUS-Schraube M10",100],["290-2.1","Wandrippe V80",7],["290-2.1A","Wandrippe V80",10],["290-2.2","Versteifungsrippe U40/100/40",1],["290-26.01","Stützprofil U38/68/38",1],["290-26.02","Stützprofil U38/68/38",1],["290-26.03","Stützprofil U38/68/38",1],["290-26.04","Stützprofil U38/68/38",1],["290-26.05","Stützprofil U38/68/38",1],["290-26.06","Stützprofil U38/68/38",1],["290-26.07","Stützprofil U38/68/38",1],["290-26.08","Stützprofil U38/68/38",1],["290-26.09","Stützprofil U38/68/38",1],["290-26.10","Stützprofil U38/68/38",1],["290-26.11","Stützprofil U38/68/38",1],["290-26.12","Stützprofil U38/68/38",1],["290-27","lfm Ankerprofil U50/101/50",30],["290-28","lfm Schrägstütze C25/75/155",15],["290-29","Anschweißplatte 300x250",20],["290-3","Knotenblech",20],["290-31","Auflagewinkel L50/50",1],["290-4","Transportbügel U50/19/50",6],["290-5.1","Richtblech 100/200",14],["290-5.2","kg Richtblech 100/200",30],["290-D1.1","Inseldeckel gepr.+gef.",1],["290-D2.1","Inseldeckel gepr.+gef.",1],["290-TW6.1","Inselwandelement gerade",1],["290-TW6.2","Inselwandelement rund",1],["290-TW6.3","Inselwandelement gerade",1],["290-TW7.1","Inselwandelement rund",1]];   // [Teil kurz, Bezeichnung, Anzahl] aus Stuecklisten_P30962_alle_Plaene.csv
 const TEIL_SET = new Set(TEILE.map(t=>t[0]));
 const inSL = t=>!TEILE.length || TEIL_SET.has(t);
 const PROZ = [['LA','Laser'],['ZS','Zuschneiden'],['KAK','Kanten klein'],['KAG','Kanten groß'],['PRM','Prägen man.'],['PRA','Prägen auto'],['RO','Rollen'],['LS','Längsnaht'],
@@ -167,13 +174,19 @@ const HR = ['HRE1','HRE2','HRF1','HRF2','HRG1','HRG2','HRG3'];
 const EXTN = {A:14,B:12,C:9,D:8,E:6,F:6,G:12,H:6};
 const TYPEN = [['K','klein 80×60'],['E','Euro 120×80'],['3M','3 m'],['6M','6 m'],['WA','Wagen'],['KR','Regal mobil'],['BOD','Boden'],['SONST','Sonstiges']];
 const KEY = 'scanRundgangP30962.v1';
+/* Prozess-Tasten (V10): Färben = eigene Taste „gef.“, QS = Taste „QS“ (grünes Etikett) */
+const PROZESSE = [['0020','Zuschneiden'],['0030','Laser'],['0050','Prägen'],['0060','Kanten groß'],['0070','Kanten klein'],['0080','Zus. Kleinteile'],
+  ['0090','BoKa'],['0100','BoKa-Deckel'],['0110','Zus. WG'],['0120','Schw. längs'],['0140','Einrollen Blech'],['0150','Einrollen Rohr'],
+  ['0160','Schw. Hand'],['0170','Schleifen'],['0190','Beizen'],['0200','Deckeldicht.'],['0210','Isolieren'],['0220','Verpacken']];
+const PNAME = Object.fromEntries(PROZESSE);
+function pzText(t){ if(!t.proz||!t.proz.length) return ''; return t.pm==='letzter' ? `bis ${t.proz[0]} ${PNAME[t.proz[0]]||''}` : t.proz.join(' · '); }
 
 /* ===== Zustand ===== */
 let S, storageOk = true;
 function blank(){
   const t0 = new Date(2026,9,23,7,30,0).getTime();
   return { v:1,
-    register:{},
+    register:{'274620':'100-8','274748':'110-1F.1','274720':'100-6'},
     rundgaenge:[{ id:'R-BEISPIEL', beispiel:true, start:t0, end:t0+6*60000, orte:[
       { id:'o1', code:'EXT B7', zeit:t0+60000, einheiten:[
         { id:'u1', nr:'U01', typ:'6M', pxx:'', gesamt:'3', lage:'', bem:'Beispiel', zeit:t0+60000, ohne:[], fremd:[], teile:[
@@ -274,19 +287,20 @@ function handleCode(raw, quelle='Scan'){
     if(!last){ beep(false); toast(`Aktivität ${ak}: Teil ${rm} ist in dieser Einheit noch nicht gescannt. Zuerst die RMNr scannen.`,'err'); return false; }
     if(last.akt.some(a=>a.akvp===ak)){ beep(false); toast(`Aktivität ${ak} schon erfasst.`,'warn'); return false; }
     last.akt.push({akvp:ak, barcode:digits, zeit:Date.now(), quelle});
-    save(); render(); flashLine(last.id); beep(true); toast(`Aktivität ${ak} → ${rm}`); return true;
+    save(); render(); if(sheet==='proz') renderSheet(); flashLine(last.id); beep(true); toast(`Aktivität ${ak} → ${rm}`); return true;
   }
   if(!digits){ beep(false); toast('Kein Code erkannt.','err'); return false; }
   if(u.teile.some(t=>t.rmnr===digits)){ beep(false); toast(`${digits} ist schon in dieser Einheit.`,'warn'); return false; }
   const odd = digits.length!==6;
-  addTeil(u,{barcode:digits, rmnr:digits, teil:S.register[digits]||'', quelle, bem: odd?`Code mit ${digits.length} Stellen – prüfen`:''});
+  const nt=addTeil(u,{barcode:digits, rmnr:digits, teil:S.register[digits]||'', quelle, bem: odd?`Code mit ${digits.length} Stellen – prüfen`:''});
   beep(!odd); if(odd) toast(`Ungewöhnliche Länge (${digits.length} Stellen) – bitte prüfen.`,'warn');
+  if(S.autoProz!==false && !sheet) openSheet('proz',{uid:u.id,tid:nt.id});
   return true;
 }
 function normTeil(s){ let t=s.trim().replace(/^P30962-MZB-/i,'').replace(/\s+/g,'-').toUpperCase(); t=t.replace(/^(\d{3})-?/, '$1-');
   const hit=TEILE.find(x=>x[0].toUpperCase()===t); return hit?hit[0]:t; }
 function addTeil(u,o){
-  const t={id:uid(), zeit:Date.now(), barcode:o.barcode||'', rmnr:o.rmnr||'', teil:o.teil||'', met:o.met||'', mgz:o.mgz||'', x:!!o.x, bem:o.bem||'', quelle:o.quelle||'Scan', akt:[]};
+  const t={id:uid(), zeit:Date.now(), barcode:o.barcode||'', rmnr:o.rmnr||'', teil:o.teil||'', met:o.met||'', mgz:o.mgz||'', x:!!o.x, bem:o.bem||'', quelle:o.quelle||'Scan', akt:[], pm:'', proz:[], gef:false};
   u.teile.push(t); save(); render(); flashLine(t.id); return t;
 }
 function flashLine(id){ const el=document.querySelector(`[data-line="${id}"]`); if(el){ el.classList.remove('new'); void el.offsetWidth; el.classList.add('new'); el.scrollIntoView({block:'nearest'}); } }
@@ -504,7 +518,7 @@ async function shareFile(name,text,mime){
   try{ await navigator.share({files:[new File([text],name,{type:mime})],title:name}); }
   catch(e){ if(e?.name!=='AbortError') toast('Teilen nicht möglich – „Speichern“ nutzen.','err'); }
 }
-const COLS=['Rundgang','Datum','Uhrzeit','Ort','Bereich','Einheit-Nr','Einheit-Typ','Pxx','Gesamt gezählt','Lage','Art','Barcode','RMNr','AkvP','Teil','Menge Etikett','Menge gezählt','Versand (x)','QS','Bemerkung','Quelle'];
+const COLS=['Rundgang','Datum','Uhrzeit','Ort','Bereich','Einheit-Nr','Einheit-Typ','Pxx','Gesamt gezählt','Lage','Art','Barcode','RMNr','AkvP','Teil','Menge Etikett','Menge gezählt','Versand (x)','QS','Bemerkung','Quelle','Prozess-Modus','Prozesse','gefärbt'];
 const csvCell = v=>{ v=String(v??''); return /[;"\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; };
 function csvFor(runs){
   const L=[COLS.join(';')];
@@ -512,13 +526,13 @@ function csvFor(runs){
     for(const o of r.orte) for(const u of o.einheiten){
       const base=[rn,null,null,o.code,bereich(o.code),u.nr,u.typ,u.pxx,u.gesamt,u.lage];
       const row=(zeit,art,rest)=>{ const b=[...base]; b[1]=fDate(zeit); b[2]=fHMS(zeit); L.push([...b,art,...rest].map(csvCell).join(';')); };
-      row(u.zeit,'Einheit',['','','','','','','','',u.bem,'']);
+      row(u.zeit,'Einheit',['','','','','','','','',u.bem,'','','','']);
       for(const t of u.teile){
-        row(t.zeit,'Teil',[t.barcode,t.rmnr,'',t.teil,t.met,t.mgz,t.x?'x':'',t.qs?'QS':'',t.bem,t.quelle]);
-        for(const a of t.akt) row(a.zeit,'Aktivität',[a.barcode,t.rmnr,a.akvp,t.teil,'','','','','',a.quelle||'Scan']);
+        row(t.zeit,'Teil',[t.barcode,t.rmnr,'',t.teil,t.met,t.mgz,t.x?'x':'',t.qs?'QS':'',t.bem,t.quelle,(t.proz&&t.proz.length)?(t.pm||'alle'):'',(t.proz||[]).join(','),t.gef?'gefärbt':'']);
+        for(const a of t.akt) row(a.zeit,'Aktivität',[a.barcode,t.rmnr,a.akvp,t.teil,'','','','','',a.quelle||'Scan','','','']);
       }
-      for(const w of u.ohne) row(w.zeit,'ohne Etikett',['','','',w.teil||'','',w.n,'','',w.text,'Hand']);
-      for(const f of u.fremd) row(f.zeit,'Fremdprojekt',['','','','','',f.n,'','',f.text||'','Hand']);
+      for(const w of u.ohne) row(w.zeit,'ohne Etikett',['','','',w.teil||'','',w.n,'','',w.text,'Hand','','','']);
+      for(const f of u.fremd) row(f.zeit,'Fremdprojekt',['','','','','',f.n,'','',f.text||'','Hand','','','']);
     }
   }
   return '﻿'+L.join('\r\n');
@@ -586,9 +600,21 @@ const SHEETS={
         <label class="f">Menge gezählt<input id="lMgz" inputmode="numeric" value="${esc(t.mgz)}" placeholder="leer = wie Etikett"></label></div>
       <div class="grid2"><button data-act="lineX" aria-pressed="${t.x}" class="xbtn">x auf Etikett (Versand)</button>
         <button data-act="lineQS" aria-pressed="${!!t.qs}" class="xbtn">QS auf Etikett (Qualität geprüft)</button></div>
+      <div class="grid2"><button data-act="lineGef" aria-pressed="${!!t.gef}" class="xbtn">gefärbt (Farbe sichtbar)</button>
+        <button data-act="openProz" data-u="${d.uid}" data-t="${t.id}" class="xbtn">Prozesse${t.proz&&t.proz.length?': '+esc(pzText(t)):' …'}</button></div>
       <label class="f">Bemerkung<input id="lBem" value="${esc(t.bem)}" placeholder="z. B. gekantet, Etikett halb lesbar"></label>
       ${t.akt.length?`<div class="row">${t.akt.map((a,i)=>`<span class="chip akt">${esc(a.akvp)} · ${fHM(a.zeit)} <button class="small ghost" data-act="delAkt" data-v="${i}" aria-label="Aktivität löschen">✕</button></span>`).join('')}</div>`:''}
       <div class="row"><button class="primary" data-act="saveLine" style="flex:1">Speichern</button><button class="danger" data-act="delLine">${d.confirmDel?'Wirklich löschen?':'Löschen'}</button></div>`;
+  },
+  proz(){ const d=sheetData; const u=curUnitById(d.uid); const t=u?.teile.find(x=>x.id===d.tid); if(!t) return ''; t.proz=t.proz||[]; const pm=t.pm||'letzter';
+    const top=pm==='letzter'&&t.proz.length?t.proz[0]:null;
+    return `<div class="sh"><h2><span class="code">${esc(t.rmnr||'')}</span> ${esc(t.teil||'')}</h2><button class="primary small" data-act="close">Fertig</button></div>
+      <div class="seg"><button data-act="pzMode" data-v="letzter" aria-pressed="${pm==='letzter'}">Letzter Schritt</button><button data-act="pzMode" data-v="alle" aria-pressed="${pm==='alle'}">Alle angetippten</button></div>
+      <div class="muted" style="font-size:14px">${pm==='letzter'?'Den zuletzt erledigten Schritt antippen – alle Schritte davor gelten als erledigt (laut Gamme der Familie, außer Färben).':'Jeden erledigten Schritt antippen (mehrere möglich).'}</div>
+      <div class="keys c4 pz">${PROZESSE.map(([c,n])=>`<button data-act="pz" data-v="${c}" aria-pressed="${t.proz.includes(c)}" class="${top&&c<top?'done':''}"><span class="k">${c}</span><span class="d">${esc(n)}</span></button>`).join('')}</div>
+      <div class="grid2"><button data-act="pzGef" aria-pressed="${!!t.gef}" class="xbtn">gefärbt (Farbe sichtbar)</button><button data-act="pzClear" class="xbtn ghost">Prozesse löschen</button></div>
+      <details><summary>Aktivität scannen (optional)</summary><p class="muted" style="font-size:14px;margin:6px 0">Code auf dem Etikett (RMNr + Aktivität, 10 Stellen) fotografieren – wird diesem Teil zugeordnet.</p>
+        <button data-act="pzScan">Foto-Scan Aktivität</button>${t.akt.length?`<div class="row" style="margin-top:6px">${t.akt.map(a=>`<span class="chip akt">${esc(a.akvp)} · ${fHM(a.zeit)}</span>`).join('')}</div>`:''}</details>`;
   },
   extra(){ const d=sheetData; const ohne=d.kind==='ohne';
     return `<div class="sh"><h2>${ohne?'Teile ohne Etikett':'Teile anderer Projekte'}</h2><button class="ghost small" data-act="close">Schließen</button></div>
@@ -680,17 +706,18 @@ function lineHTML(u,t){
     <div class="main" data-act="editLine" data-u="${u.id}" data-t="${t.id}"><span class="rm">${esc(t.rmnr||'—')}</span><span class="tl ${t.teil?'':'empty'}">${esc(t.teil||'Teil-Nr. antippen')}</span></div>
     <button class="xbtn small" data-act="toggleX" data-u="${u.id}" data-t="${t.id}" aria-pressed="${t.x}" aria-label="x auf Etikett">x</button>
     <button class="xbtn small" data-act="toggleQS" data-u="${u.id}" data-t="${t.id}" aria-pressed="${!!t.qs}" aria-label="QS-Vermerk auf Etikett">QS</button>
+    <button class="xbtn small" data-act="toggleGef" data-u="${u.id}" data-t="${t.id}" aria-pressed="${!!t.gef}" aria-label="gefärbt">gef.</button>
     <button class="xbtn small ghost trash" data-act="quickDel" data-u="${u.id}" data-t="${t.id}" aria-label="Zeile löschen"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-    ${(t.akt.length||t.met||t.mgz||t.bem||notInList||t.quelle!=='Scan')?`<div class="meta">${t.akt.map(a=>`<span class="chip akt">${esc(a.akvp)}</span>`).join('')}
+    <div class="meta"><button class="small" data-act="openProz" data-u="${u.id}" data-t="${t.id}">${t.proz&&t.proz.length?'Prozess: '+esc(pzText(t)):'+ Prozess'}</button>${t.gef?'<span class="chip gf">gefärbt</span>':''}${t.akt.map(a=>`<span class="chip akt">${esc(a.akvp)}</span>`).join('')}
       ${t.met?`<span class="chip">Etikett ${esc(t.met)}</span>`:''}${t.mgz?`<span class="chip">gezählt ${esc(t.mgz)}</span>`:''}
-      ${notInList?'<span class="chip warn">nicht in Stückliste</span>':''}${t.quelle!=='Scan'?`<span class="chip">${esc(t.quelle)}</span>`:''}${t.bem?`<span class="muted">${esc(t.bem)}</span>`:''}</div>`:''}
+      ${notInList?'<span class="chip warn">nicht in Stückliste</span>':''}${t.quelle!=='Scan'?`<span class="chip">${esc(t.quelle)}</span>`:''}${t.bem?`<span class="muted">${esc(t.bem)}</span>`:''}</div>
     ${ls?`<div class="hint">zuletzt ${fDM(ls.zeit)} ${fHM(ls.zeit)} · ${esc(ls.ort)} · ${esc(ls.pxx||ls.nr)}${ls.pxx&&!u.pxx?` <button class="small" data-act="setUnitPxx" data-u="${u.id}" data-v="${esc(ls.pxx)}">= ${esc(ls.pxx)}</button>`:''}</div>`:''}
   </li>`;
 }
 function homeHTML(){
   const runs=[...S.rundgaenge].sort((a,b)=>b.start-a.start);
   return `<main class="wrap" style="padding-top:18px">
-    <div><div class="eyebrow">Materialfluss Ist-Aufnahme</div><h1>Scan-Rundgang</h1><div class="muted" style="font-size:13px">Version 9 · 27.10.2026</div></div>
+    <div><div class="eyebrow">P30962-MZB · Materialfluss Ist-Aufnahme</div><h1>Scan-Rundgang</h1><div class="muted" style="font-size:13px">Version 10 · 29.10.2026 · Prozess-Tasten</div></div>
     ${storageOk?'':`<div class="banner err">Speicher im Browser nicht verfügbar. Nach jedem Rundgang exportieren.</div>`}
     <button class="primary" data-act="newRun" style="min-height:56px;font-size:19px">Neuer Rundgang</button>
     ${runs.map(r=>{ const us=allUnits(r); const n=us.reduce((a,[,u])=>a+u.teile.length,0);
@@ -701,6 +728,7 @@ function homeHTML(){
     <details class="panel" open><summary>Sicherung und Register</summary>
       <p class="muted" style="margin:0;font-size:15px">Die Daten liegen nur in diesem Browser. Sicherung als JSON, um sie auf ein anderes Gerät zu bringen. Register: ${Object.keys(S.register).length} RMNr mit Teil-Nr.</p>
       <div class="muted code" style="font-size:12.5px">Technik: https ${window.isSecureContext?'ja':'nein'} · BarcodeDetector ${'BarcodeDetector' in window?'ja':'nein'} · Kamera-API ${navigator.mediaDevices?'ja':'nein'}</div>
+      <label class="row" style="font-size:15px"><input type="checkbox" data-act="autoProz" style="width:auto;min-height:0" ${S.autoProz!==false?'checked':''}> Nach jedem Scan Prozess-Tasten öffnen</label>
       <div class="row"><button class="small" data-act="exportAll">Alle als CSV</button><button class="small" data-act="backup">Sicherung speichern</button>${shareOk('a.json','application/json')?'<button class="small" data-act="shareBackup">Sicherung teilen</button>':''}<button class="small" data-act="restore">Sicherung laden</button></div>
     </details>
   </main>`;
@@ -749,6 +777,18 @@ document.addEventListener('click',async e=>{
       const [t]=u.teile.splice(i,1); save(); render(); undoToast(`${t.rmnr||t.teil} gelöscht`,()=>{ u.teile.splice(i,0,t); save(); render(); }); break; }
     case 'undo': if(undoFn){ const f=undoFn; undoFn=null; f(); const tt=$('#toast'); if(tt) tt.hidden=true; } break;
     case 'toggleQS': { const u=curUnitById(b.dataset.u); const t=u.teile.find(x=>x.id===b.dataset.t); t.qs=!t.qs; save(); render(); break; }
+    case 'toggleGef': { const u=curUnitById(b.dataset.u); const t=u.teile.find(x=>x.id===b.dataset.t); t.gef=!t.gef; save(); render(); break; }
+    case 'lineGef': { const t=lineObj(); grabLine(t); t.gef=!t.gef; save(); renderSheet(); render(); break; }
+    case 'openProz': { const t=lineObj(); if(t&&sheet==='line') grabLine(t); openSheet('proz',{uid:b.dataset.u,tid:b.dataset.t}); break; }
+    case 'pzMode': { const t=pzObj(); t.pm=v; if(v==='letzter'&&t.proz.length>1) t.proz=[t.proz.sort().at(-1)]; save(); renderSheet(); render(); break; }
+    case 'pz': { const t=pzObj(); if(!t.pm) t.pm='letzter';
+      if(t.pm==='letzter') t.proz = (t.proz.length===1&&t.proz[0]===v)?[]:[v];
+      else { t.proz = t.proz.includes(v)?t.proz.filter(x=>x!==v):[...t.proz,v].sort(); }
+      save(); render(); if(t.pm==='letzter'&&t.proz.length){ closeSheet(); toast(`${t.rmnr||t.teil}: bis ${v} ${PNAME[v]}`); } else renderSheet(); break; }
+    case 'pzGef': { const t=pzObj(); t.gef=!t.gef; save(); renderSheet(); render(); break; }
+    case 'pzClear': { const t=pzObj(); t.proz=[]; save(); renderSheet(); render(); break; }
+    case 'pzScan': $('#photo').click(); break;
+    case 'autoProz': S.autoProz=b.checked; save(); break;
     case 'toggleX': { const u=curUnitById(b.dataset.u); const t=u.teile.find(x=>x.id===b.dataset.t); t.x=!t.x; save(); render(); break; }
     case 'editLine': openSheet('line',{uid:b.dataset.u,tid:b.dataset.t}); break;
     case 'lineQS': { const t=lineObj(); grabLine(t); t.qs=!t.qs; save(); renderSheet(); render(); break; }
@@ -769,6 +809,7 @@ document.addEventListener('click',async e=>{
 });
 function forEachTeil(fn){ S.rundgaenge.forEach(r=>r.orte.forEach(o=>o.einheiten.forEach(u=>u.teile.forEach(fn)))); }
 function lineObj(){ return curUnitById(sheetData.uid)?.teile.find(x=>x.id===sheetData.tid); }
+function pzObj(){ const t=curUnitById(sheetData.uid)?.teile.find(x=>x.id===sheetData.tid); if(t){ t.proz=t.proz||[]; } return t; }
 function grabLine(t){ if(!$('#lTeil')) return; const tv=$('#lTeil').value.trim(); t.teil=tv?normTeil(tv):''; t.met=$('#lMet').value.trim(); t.mgz=$('#lMgz').value.trim(); t.bem=$('#lBem').value.trim(); }
 function grabEinheit(){ if(!$('#fPxx')) return; const v=sheetData.v; v.pxx=$('#fPxx').value.trim().toUpperCase(); v.gesamt=$('#fGes').value.trim(); v.lage=$('#fLage').value.trim(); v.bem=$('#fBem').value.trim(); }
 function pickOrt(code){
@@ -787,7 +828,7 @@ function saveEinheit(){
 }
 function takeOver(){
   const u=curUnit(); const p=lastByPxx(u.pxx,S.cur.rid); if(!p) return; const now=Date.now();
-  p.u.teile.forEach((t,i)=>u.teile.push({id:uid(),zeit:now+i,barcode:t.barcode,rmnr:t.rmnr,teil:t.teil,met:t.met,mgz:t.mgz,x:t.x,qs:!!t.qs,bem:t.bem,quelle:'übernommen',akt:[]}));
+  p.u.teile.forEach((t,i)=>u.teile.push({id:uid(),zeit:now+i,barcode:t.barcode,rmnr:t.rmnr,teil:t.teil,met:t.met,mgz:t.mgz,x:t.x,qs:!!t.qs,gef:!!t.gef,pm:t.pm||'',proz:[...(t.proz||[])],bem:t.bem,quelle:'übernommen',akt:[]}));
   p.u.ohne.forEach(w=>u.ohne.push({...w,zeit:now})); p.u.fremd.forEach(w=>u.fremd.push({...w,zeit:now}));
   if(!u.gesamt) u.gesamt=p.u.gesamt; u.bem=[u.bem,'unverändert wie '+fDM(p.r.start)].filter(Boolean).join(' · ');
   save(); render(); toast(`${p.u.teile.length} Zeilen übernommen – bei Abweichung einzeln ändern.`);
@@ -804,4 +845,5 @@ document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==
 
 load(); render();
 </script>
+
 </body></html>
