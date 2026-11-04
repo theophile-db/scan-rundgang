@@ -97,6 +97,12 @@ header.top .row{flex-wrap:nowrap;flex-shrink:0}
 .keys.pz button .k{font-size:14px}
 .keys.pz button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .keys.pz button.done{background:var(--accent-soft)}
+.keys.c2{grid-template-columns:repeat(2,1fr)}
+.keys.gm button{flex-direction:row;justify-content:flex-start;gap:10px;text-align:left;padding:6px 10px}
+.keys.gm button .k{font-size:22px;min-width:26px;text-align:center}
+.keys.gm button .d{text-align:left;font-size:13px;color:var(--ink)}
+.keys.gm button[aria-pressed="true"] .d,.keys.gm button[aria-pressed="true"] .d .code{color:inherit}
+.keys.gm button .d .code{font-size:11.5px;color:var(--muted)}
 .prev{border:1px dashed var(--line);border-radius:8px;padding:8px 10px;font-size:15px;display:flex;flex-direction:column;gap:6px}
 
 /* Untere Leiste */
@@ -176,7 +182,10 @@ const PROZ = [['LA','Laser'],['ZS','Zuschneiden'],['KAK','Kanten klein'],['KAG',
 const ZONEN = [['116C-VB','Vorb. Beizen'],['116C-PU','Puffer'],['116C-SH','Shiner'],['116C-L1','Lager 1']];
 const HR = ['HRE1','HRE2','HRF1','HRF2','HRG1','HRG2','HRG3'];
 const EXTN = {A:14,B:12,C:9,D:8,E:6,F:6,G:12,H:6};
-const TYPEN = [['K','klein 80×60'],['E','Euro 120×80'],['3M','3 m'],['6M','6 m'],['WA','Wagen'],['KR','Regal mobil'],['BOD','Boden'],['SONST','Sonstiges']];
+/* Einheit-Typen (V13): Wagen WA1/WA2/WA3 + WA (Typ unbekannt). Alte Daten mit „WA“ bleiben gültig. */
+const TYPEN = [['K','klein 80×60'],['E','Euro 120×80'],['3M','3 m'],['6M','6 m'],
+  ['WA1','Wagen Wand / 3-m-Palette mit Rollen · 170×104'],['WA2','Wagen BoKa-Deckel · 200×63'],['WA3','Wagen Rinnenbleche / Rohre (B9) · 250×160'],['WA','Wagen (Typ unbekannt)'],
+  ['KR','Regal mobil 104×84, H 75'],['BOD','Boden'],['SONST','Sonstiges']];
 const KEY = 'scanRundgangP30962.v1';
 /* Projekte außerhalb der Studie – werden auch aus gespeicherten Projektdaten gelöscht (02.11.2026) */
 const PROJ_ENTFERNT=['P30967-KPB','P30967-MZB','P30970-KPB','P30970-MZB'];
@@ -207,7 +216,34 @@ const PROZESSE = [['0020','Zuschneiden'],['0030','Laser'],['0040','Färben'],['0
   ['0090','BoKa'],['0100','BoKa-Deckel'],['0110','Zus. WG'],['0120','Schw. längs'],['0140','Einrollen Blech'],['0150','Einrollen Rohr'],
   ['0160','Schw. Hand'],['0170','Schleifen'],['0190','Beizen'],['0200','Deckeldicht.'],['0210','Isolieren'],['0220','Verpacken']];
 const PNAME = Object.fromEntries(PROZESSE);
-function pzText(t){ if(!t.proz||!t.proz.length) return ''; return t.pm==='letzter' ? `bis ${t.proz[0]} ${PNAME[t.proz[0]]||''}` : t.proz.join(' · '); }
+/* Gamme-Schritte je PF (V13, regles_import §6.2 / E2E 08 AF:AK, Stand 04.11.2026). [AkvP, Text, optional, Färben-Schritt]
+   Wiederholte Schritte (PF5) sind eigene Ränge. PF4R = Rinnenteil rund (110-1A/1C/1F/20A–20H …). Ohne PF: alte AkvP-Liste. */
+const GST={
+  PF1:[['0030','Laser (oder Zuschneiden)'],['0060','Kanten groß'],['0110','Zusammenbau WG (SWD2–6)'],['0160','Schweißen Hand / Automatennaht (SWD8 ± SWD7)'],['0190','Beizen'],['0220','Verpacken']],
+  PF2:[['0030','Laser'],['0040','Färben',0,1],['0050','Prägen'],['0060','Kanten groß'],['0110','Zusammenbau WG (SWD2–6)'],['0160','Schweißen Hand (SWD8 ± SWD7)'],['0190','Beizen'],['0220','Verpacken']],
+  PF3:[['0030','Laser'],['0060','Kanten groß'],['0120','Schweißen längs (LS)'],['0110','Zusammenbau WG (SWD2–6)'],['0160','Schweißen Hand (SWD8 ± SWD7)'],['0190','Beizen'],['0220','Verpacken']],
+  PF4:[['0030','Laser'],['0140','Einrollen (RO)'],['0110','Zusammenbau (SWB1)'],['0160','Schweißen Hand (SWD8 ± SWD7)'],['0170','Schleifen (SL)'],['0190','Beizen'],['0220','Verpacken']],
+  PF4R:[['0030','Laser (Bogen)'],['0110','Einbau in Wand rund (SWB1) – Ende']],
+  PF5:[['0040','Färben (+Folie)'],['0030','Laser (Folie)'],['0040','Färben (Folie ab / Entfärben)'],['0050','Prägen'],['0030','Laser'],['0110','Zusammenbau',1],['0190','Beizen',1]],
+  PF6:[['0030','Laser'],['0170','Schleifen (SL)'],['0060','Kanten groß'],['0110','Zusammenbau mit Wand – Ende']],
+  PF7:[['0030','Laser (oder Zuschneiden)'],['0070','Kanten klein'],['0080','Zusammenbau Kleinteile',1]],
+  PF9:[['0030','Laser'],['0060','Kanten groß'],['0090','Bodenkanal (SWD1)'],['0190','Beizen'],['0220','Verpacken']],
+  PF10:[['0030','Laser'],['0040','Färben',1,1],['0050','Prägen',1],['0060','Kanten groß'],['0100','BoKa-Deckel (SWD1)'],['0190','Beizen'],['0220','Verpacken']]};
+/* PF4: Wand rund oder Rinnenteil rund – automatisch nach Bezeichnung, im Blatt umschaltbar (t.gv = 'W' / 'R') */
+function pf4Auto(info){ return /element|gerollt/i.test(info.bez||'')?'W':'R'; }
+function gKey(t,info){ info=info||teilInfo(t); if(!info||!info.pf) return ''; let k=info.pf; if(k==='PF4'&&(t.gv||pf4Auto(info))==='R') k='PF4R'; return GST[k]?k:''; }
+function gList(t,info){ const k=gKey(t,info); return k?GST[k].map((x,i)=>({r:i+1,c:x[0],n:x[1],opt:!!x[2],f:!!x[3]})):[]; }
+const gName=(k,s)=>(k==='PF4R'?'Rinnenteil rund: ':'')+s.n;
+/* Prozesse (AkvP) aus den Gamme-Rängen + Schritten außerhalb der Gamme */
+function gSync(t){ const L=gList(t); const cs=(t.gr||[]).map(r=>(L[r-1]||{}).c).filter(Boolean); t.proz=[...new Set([...cs,...(t.gx||[])])]; }
+/* alte Einträge (nur AkvP) beim Öffnen auf Ränge umrechnen */
+function gInit(t){ if(t.gr) return; const L=gList(t); t.gr=[]; t.gx=[]; for(const c of (t.proz||[])){ const s=L.find(x=>x.c===c); if(s&&!t.gr.includes(s.r)) t.gr.push(s.r); else if(!s) t.gx.push(c); } t.gr.sort((a,b)=>a-b); }
+function gExport(t){ const k=gKey(t); if(!k) return ['',t.fsk?'Färben übersprungen':'']; const L=gList(t); const gr=t.gr||[];
+  const txt=gr.map(r=>gName(k,L[r-1]||{n:'?'})); if(t.fsk) txt.push('Färben übersprungen'); return [gr.join(','),txt.join(' · ')]; }
+function pzText(t){ const k=gKey(t); if(k&&t.gr&&(t.gr.length||t.fsk)){ const L=gList(t); const sk=t.fsk?' · Färben übersprungen':'';
+    if(!t.gr.length) return (t.gx||[]).join(' · ')+sk;
+    return (t.pm==='letzter'?`bis ${t.gr[0]} ${L[t.gr[0]-1].n}`:t.gr.join(' · '))+((t.gx||[]).length?' + '+t.gx.join(','):'')+sk; }
+  if(!t.proz||!t.proz.length) return ''; return t.pm==='letzter' ? `bis ${t.proz[0]} ${PNAME[t.proz[0]]||''}` : t.proz.join(' · '); }
 
 /* ===== Zustand ===== */
 let S, storageOk = true;
@@ -557,7 +593,7 @@ async function shareFile(name,text,mime){
   try{ await navigator.share({files:[new File([text],name,{type:mime})],title:name}); }
   catch(e){ if(e?.name!=='AbortError') toast('Teilen nicht möglich – „Speichern“ nutzen.','err'); }
 }
-const COLS=['Rundgang','Datum','Uhrzeit','Ort','Bereich','Einheit-Nr','Einheit-Typ','Pxx','Gesamt gezählt','Lage','Art','Barcode','RMNr','AkvP','Teil','Menge Etikett','Menge gezählt','Versand (x)','QS','Bemerkung','Quelle','Prozess-Modus','Prozesse','gefärbt','Projekt'];
+const COLS=['Rundgang','Datum','Uhrzeit','Ort','Bereich','Einheit-Nr','Einheit-Typ','Pxx','Gesamt gezählt','Lage','Art','Barcode','RMNr','AkvP','Teil','Menge Etikett','Menge gezählt','Versand (x)','QS','Bemerkung','Quelle','Prozess-Modus','Prozesse','gefärbt','Projekt','Gamme-Rang','Gamme-Schritt'];
 const csvCell = v=>{ v=String(v??''); return /[;"\n\r]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v; };
 function csvFor(runs){
   const L=[COLS.join(';')];
@@ -565,13 +601,13 @@ function csvFor(runs){
     for(const o of r.orte) for(const u of o.einheiten){
       const base=[rn,null,null,o.code,bereich(o.code),u.nr,u.typ,u.pxx,u.gesamt,u.lage];
       const row=(zeit,art,rest)=>{ const b=[...base]; b[1]=fDate(zeit); b[2]=fHMS(zeit); L.push([...b,art,...rest].map(csvCell).join(';')); };
-      row(u.zeit,'Einheit',['','','','','','','','',u.bem,'','','','','']);
+      row(u.zeit,'Einheit',['','','','','','','','',u.bem,'','','','','','','']);
       for(const t of u.teile){
-        row(t.zeit,'Teil',[t.barcode,t.rmnr,'',t.teil,t.met,t.mgz,t.x?'x':'',t.qs?'QS':'',t.bem,t.quelle,(t.proz&&t.proz.length)?(t.pm||'alle'):'',(t.proz||[]).join(','),(t.gef||(t.proz||[]).includes('0040'))?'gefärbt':'',t.proj||(teilInfo(t)||{}).proj||'']);
-        for(const a of t.akt) row(a.zeit,'Aktivität',[a.barcode,t.rmnr,a.akvp,t.teil,'','','','','',a.quelle||'Scan','','','','']);
+        row(t.zeit,'Teil',[t.barcode,t.rmnr,'',t.teil,t.met,t.mgz,t.x?'x':'',t.qs?'QS':'',t.bem,t.quelle,(t.proz&&t.proz.length)?(t.pm||'alle'):'',(t.proz||[]).join(','),(t.gef||(t.proz||[]).includes('0040'))?'gefärbt':'',t.proj||(teilInfo(t)||{}).proj||'',...gExport(t)]);
+        for(const a of t.akt) row(a.zeit,'Aktivität',[a.barcode,t.rmnr,a.akvp,t.teil,'','','','','',a.quelle||'Scan','','','','','','']);
       }
-      for(const w of u.ohne) row(w.zeit,'ohne Etikett',['','','',w.teil||'','',w.n,'','',w.text,'Hand','','','','']);
-      for(const f of u.fremd) row(f.zeit,'Fremdprojekt',['','','','','',f.n,'','',f.text||'','Hand','','','','']);
+      for(const w of u.ohne) row(w.zeit,'ohne Etikett',['','','',w.teil||'','',w.n,'','',w.text,'Hand','','','','','','']);
+      for(const f of u.fremd) row(f.zeit,'Fremdprojekt',['','','','','',f.n,'','',f.text||'','Hand','','','','','','']);
     }
   }
   return '﻿'+L.join('\r\n');
@@ -645,12 +681,28 @@ const SHEETS={
       <div class="row"><button class="primary" data-act="saveLine" style="flex:1">Speichern</button><button class="danger" data-act="delLine">${d.confirmDel?'Wirklich löschen?':'Löschen'}</button></div>`;
   },
   proz(){ const d=sheetData; const u=curUnitById(d.uid); const t=u?.teile.find(x=>x.id===d.tid); if(!t) return ''; t.proz=t.proz||[]; const pm=t.pm||'letzter';
+    const inf=teilInfo(t), gk=gKey(t,inf); if(gk) return this.prozG(t,inf,gk,pm);
     const top=pm==='letzter'&&t.proz.length?t.proz[0]:null;
     return `<div class="sh"><h2><span class="code">${esc(t.rmnr||'')}</span> ${esc(t.teil||'')}</h2><button class="primary small" data-act="close">Fertig</button></div>
       <div class="seg"><button data-act="pzMode" data-v="letzter" aria-pressed="${pm==='letzter'}">Letzter Schritt</button><button data-act="pzMode" data-v="alle" aria-pressed="${pm==='alle'}">Alle angetippten</button></div>
       ${gammeOf(teilInfo(t))?`<div class="chip akt" style="align-self:flex-start">${esc(teilInfo(t).pf)}: ${esc(gammeOf(teilInfo(t)))}</div>`:''}
       <div class="muted" style="font-size:14px">${pm==='letzter'?'Den zuletzt erledigten Schritt antippen – alle Schritte davor laut Gamme der PF gelten als erledigt (außer Schritte in Klammern). Färben = 0040.':'Jeden erledigten Schritt antippen (mehrere möglich).'}</div>
       <div class="keys c4 pz">${PROZESSE.map(([c,n])=>`<button data-act="pz" data-v="${c}" aria-pressed="${t.proz.includes(c)}" class="${pzDone(teilInfo(t),top,c)?'done':''}"><span class="k">${c}</span><span class="d">${esc(n)}</span></button>`).join('')}</div>
+      <button data-act="pzClear" class="xbtn ghost">Prozesse löschen</button>
+      <details><summary>Aktivität scannen (optional)</summary><p class="muted" style="font-size:14px;margin:6px 0">Code auf dem Etikett (RMNr + Aktivität, 10 Stellen) fotografieren – wird diesem Teil zugeordnet.</p>
+        <button data-act="pzScan">Foto-Scan Aktivität</button>${t.akt.length?`<div class="row" style="margin-top:6px">${t.akt.map(a=>`<span class="chip akt">${esc(a.akvp)} · ${fHM(a.zeit)}</span>`).join('')}</div>`:''}</details>`;
+  },
+  /* Gamme der PF (V13): nummerierte Schritte, wiederholte Schritte getrennt, optionale „opt.“ */
+  prozG(t,inf,gk,pm){ gInit(t); const L=gList(t,inf); const top=pm==='letzter'&&t.gr.length?t.gr[0]:null; const hasF=L.some(x=>x.f);
+    return `<div class="sh"><h2><span class="code">${esc(t.rmnr||'')}</span> ${esc(t.teil||'')}</h2><button class="primary small" data-act="close">Fertig</button></div>
+      <div class="seg"><button data-act="pzMode" data-v="letzter" aria-pressed="${pm==='letzter'}">Letzter Schritt</button><button data-act="pzMode" data-v="alle" aria-pressed="${pm==='alle'}">Alle angetippten</button></div>
+      <div class="chip akt" style="align-self:flex-start">${esc(inf.pf)} · Gamme${gk==='PF4R'?' Rinnenteil rund':gk==='PF4'?' Wand rund':''}</div>
+      ${inf.pf==='PF4'?`<div class="seg"><button data-act="pzVar" data-v="W" aria-pressed="${gk==='PF4'}">Wand rund</button><button data-act="pzVar" data-v="R" aria-pressed="${gk==='PF4R'}">Rinnenteil rund</button></div>`:''}
+      <div class="muted" style="font-size:14px">${pm==='letzter'?'Den zuletzt erledigten Schritt antippen – alle Schritte davor gelten als erledigt (außer „opt.“'+(hasF?' und übersprungenem Färben':'')+').':'Jeden erledigten Schritt antippen (mehrere möglich).'}</div>
+      <div class="keys c2 pz gm">${L.map(s=>`<button data-act="pzG" data-v="${s.r}" aria-pressed="${t.gr.includes(s.r)}" class="${top&&s.r<top&&!s.opt&&!(s.f&&t.fsk)?'done':''}"><span class="k">${s.r}</span><span class="d">${esc(s.n)}<br><span class="code">${s.c}</span>${s.opt?' · <b>opt.</b>':''}</span></button>`).join('')}</div>
+      ${hasF?`<button data-act="pzSkipF" class="xbtn" aria-pressed="${!!t.fsk}">${t.fsk?'✓ ':''}Färben übersprungen (Teil nicht gefärbt)</button>`:''}
+      <details ${(t.gx||[]).length?'open':''}><summary>Andere AkvP (außerhalb der Gamme)</summary>
+        <div class="keys c4 pz" style="margin-top:6px">${PROZESSE.map(([c,n])=>`<button data-act="pzX" data-v="${c}" aria-pressed="${(t.gx||[]).includes(c)}"><span class="k">${c}</span><span class="d">${esc(n)}</span></button>`).join('')}</div></details>
       <button data-act="pzClear" class="xbtn ghost">Prozesse löschen</button>
       <details><summary>Aktivität scannen (optional)</summary><p class="muted" style="font-size:14px;margin:6px 0">Code auf dem Etikett (RMNr + Aktivität, 10 Stellen) fotografieren – wird diesem Teil zugeordnet.</p>
         <button data-act="pzScan">Foto-Scan Aktivität</button>${t.akt.length?`<div class="row" style="margin-top:6px">${t.akt.map(a=>`<span class="chip akt">${esc(a.akvp)} · ${fHM(a.zeit)}</span>`).join('')}</div>`:''}</details>`;
@@ -761,7 +813,7 @@ function verfCount(r){ const all=allTracked(); if(!all.length) return ''; const 
 function homeHTML(){
   const runs=[...S.rundgaenge].sort((a,b)=>b.start-a.start);
   return `<main class="wrap" style="padding-top:18px">
-    <div><div class="eyebrow">Materialfluss Ist-Aufnahme · alle Projekte</div><h1>Scan-Rundgang</h1><div class="muted" style="font-size:13px">Version 12.1 · 02.11.2026 · Färben 0040, mehrere Projekte</div></div>
+    <div><div class="eyebrow">Materialfluss Ist-Aufnahme · alle Projekte</div><h1>Scan-Rundgang</h1><div class="muted" style="font-size:13px">Version 13 · 04.11.2026 · Wagen WA1–3, Gamme je PF</div></div>
     ${storageOk?'':`<div class="banner err">Speicher im Browser nicht verfügbar. Nach jedem Rundgang exportieren.</div>`}
     <button class="primary" data-act="newRun" style="min-height:56px;font-size:19px">Neuer Rundgang</button>
     ${runs.map(r=>{ const us=allUnits(r); const n=us.reduce((a,[,u])=>a+u.teile.length,0);
@@ -835,13 +887,25 @@ document.addEventListener('click',async e=>{
     case 'toggleGef': { const u=curUnitById(b.dataset.u); const t=u.teile.find(x=>x.id===b.dataset.t); t.gef=!t.gef; save(); render(); break; }
     case 'lineGef': { const t=lineObj(); grabLine(t); t.gef=!t.gef; save(); renderSheet(); render(); break; }
     case 'openProz': { const t=lineObj(); if(t&&sheet==='line') grabLine(t); openSheet('proz',{uid:b.dataset.u,tid:b.dataset.t}); break; }
-    case 'pzMode': { const t=pzObj(); t.pm=v; if(v==='letzter'&&t.proz.length>1){ const inf=teilInfo(t); t.proz=[[...t.proz].sort((a,b)=>pzRank(inf,a)-pzRank(inf,b)).at(-1)]; } save(); renderSheet(); render(); break; }
+    case 'pzMode': { const t=pzObj(); t.pm=v; if(gKey(t)&&t.gr){ if(v==='letzter'){ if(t.gr.length){ t.gr=[Math.max(...t.gr)]; t.gx=[]; } else if((t.gx||[]).length>1){ const inf=teilInfo(t); t.gx=[[...t.gx].sort((a,b)=>pzRank(inf,a)-pzRank(inf,b)).at(-1)]; } gSync(t); } save(); renderSheet(); render(); break; }
+      if(v==='letzter'&&t.proz.length>1){ const inf=teilInfo(t); t.proz=[[...t.proz].sort((a,b)=>pzRank(inf,a)-pzRank(inf,b)).at(-1)]; } save(); renderSheet(); render(); break; }
     case 'pz': { const t=pzObj(); if(!t.pm) t.pm='letzter';
       if(t.pm==='letzter') t.proz = (t.proz.length===1&&t.proz[0]===v)?[]:[v];
       else { const inf=teilInfo(t); t.proz = t.proz.includes(v)?t.proz.filter(x=>x!==v):[...t.proz,v].sort((a,b)=>pzRank(inf,a)-pzRank(inf,b)); }
       save(); render(); if(t.pm==='letzter'&&t.proz.length){ closeSheet(); toast(`${t.rmnr||t.teil}: bis ${v} ${PNAME[v]}`); } else renderSheet(); break; }
     case 'pzGef': { const t=pzObj(); t.gef=!t.gef; save(); renderSheet(); render(); break; }
-    case 'pzClear': { const t=pzObj(); t.proz=[]; save(); renderSheet(); render(); break; }
+    case 'pzClear': { const t=pzObj(); t.proz=[]; if(t.gr){ t.gr=[]; t.gx=[]; } t.fsk=false; save(); renderSheet(); render(); break; }
+    case 'pzG': { const t=pzObj(); if(!t.pm) t.pm='letzter'; const r=+v; const L=gList(t);
+      if(t.pm==='letzter'){ t.gr=(t.gr.length===1&&t.gr[0]===r&&!(t.gx||[]).length)?[]:[r]; t.gx=[]; }
+      else t.gr=t.gr.includes(r)?t.gr.filter(x=>x!==r):[...t.gr,r].sort((a,b)=>a-b);
+      if(L[r-1]?.f&&t.gr.includes(r)) t.fsk=false; gSync(t);
+      save(); render(); if(t.pm==='letzter'&&t.gr.length){ closeSheet(); toast(`${t.rmnr||t.teil}: bis ${r} ${L[r-1].n}`); } else renderSheet(); break; }
+    case 'pzX': { const t=pzObj(); if(!t.pm) t.pm='letzter'; t.gx=t.gx||[];
+      if(t.pm==='letzter'){ t.gx=(t.gx.length===1&&t.gx[0]===v&&!t.gr.length)?[]:[v]; t.gr=[]; }
+      else { const inf=teilInfo(t); t.gx=t.gx.includes(v)?t.gx.filter(x=>x!==v):[...t.gx,v].sort((a,b)=>pzRank(inf,a)-pzRank(inf,b)); }
+      gSync(t); save(); renderSheet(); render(); break; }
+    case 'pzSkipF': { const t=pzObj(); t.fsk=!t.fsk; if(t.fsk){ const L=gList(t); t.gr=t.gr.filter(r=>!L[r-1]?.f); gSync(t); } save(); renderSheet(); render(); break; }
+    case 'pzVar': { const t=pzObj(); t.gv=v; t.gr=undefined; t.gx=undefined; gInit(t); gSync(t); save(); renderSheet(); render(); break; }
     case 'pzScan': $('#photo').click(); break;
     case 'autoProz': S.autoProz=b.checked; save(); break;
     case 'toggleX': { const u=curUnitById(b.dataset.u); const t=u.teile.find(x=>x.id===b.dataset.t); t.x=!t.x; save(); render(); break; }
@@ -874,7 +938,7 @@ function pickOrt(code){
   openSheet('einheit',{});
 }
 function saveEinheit(){
-  grabEinheit(); const v=sheetData.v; if(!v.typ){ toast('Typ wählen (K, E, 3M, 6M, WA, KR, BOD …).','err'); return; }
+  grabEinheit(); const v=sheetData.v; if(!v.typ){ toast('Typ wählen (K, E, 3M, 6M, WA1–3, KR, BOD …).','err'); return; }
   if(v.pxx && !/^P\d{2}(\.\d+)?$/.test(v.pxx)) toast(`„${v.pxx}“ ist kein üblicher Pxx-Code – trotzdem gespeichert.`,'warn');
   const o=curOrt(); const r=run();
   if(sheetData.uid){ const u=o.einheiten.find(x=>x.id===sheetData.uid); Object.assign(u,{typ:v.typ,pxx:v.pxx,gesamt:v.gesamt,lage:v.lage,bem:v.bem}); S.cur.uid=u.id; }
@@ -883,7 +947,7 @@ function saveEinheit(){
 }
 function takeOver(){
   const u=curUnit(); const p=lastByPxx(u.pxx,S.cur.rid); if(!p) return; const now=Date.now();
-  p.u.teile.forEach((t,i)=>u.teile.push({id:uid(),zeit:now+i,barcode:t.barcode,rmnr:t.rmnr,teil:t.teil,met:t.met,mgz:t.mgz,x:t.x,qs:!!t.qs,gef:!!t.gef,pm:t.pm||'',proz:[...(t.proz||[])],bem:t.bem,quelle:'übernommen',akt:[]}));
+  p.u.teile.forEach((t,i)=>u.teile.push({id:uid(),zeit:now+i,barcode:t.barcode,rmnr:t.rmnr,teil:t.teil,met:t.met,mgz:t.mgz,x:t.x,qs:!!t.qs,gef:!!t.gef,pm:t.pm||'',proz:[...(t.proz||[])],...(t.gr?{gr:[...t.gr],gx:[...(t.gx||[])]}:{}),...(t.gv?{gv:t.gv}:{}),...(t.fsk?{fsk:true}:{}),bem:t.bem,quelle:'übernommen',akt:[]}));
   p.u.ohne.forEach(w=>u.ohne.push({...w,zeit:now})); p.u.fremd.forEach(w=>u.fremd.push({...w,zeit:now}));
   if(!u.gesamt) u.gesamt=p.u.gesamt; u.bem=[u.bem,'unverändert wie '+fDM(p.r.start)].filter(Boolean).join(' · ');
   save(); render(); toast(`${p.u.teile.length} Zeilen übernommen – bei Abweichung einzeln ändern.`);
