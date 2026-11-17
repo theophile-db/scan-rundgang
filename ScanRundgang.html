@@ -180,6 +180,7 @@ const PROZ = [['LA','Laser'],['ZS','Zuschneiden'],['KAK','Kanten klein'],['KAG',
   ['SWB1','53035'],['SWB2','53028'],['SWB3','Container'],['FA','Färben'],
   ['SWD1','53037'],['SWD2','53023'],['SWD3','53016'],['SWD4','53016'],['SWD5','53016'],['SWD6','53016'],['SWD7','53018'],['SWD8','Längsschw. 2'],
   ['LT','Lagerturm'],['SL','Schleifen'],['BZ','Beizen'],['EX','Expedit'],['VS','Versand'],['MAG','Magazin']];
+const NOW_W = ['LT','MAG'];   // Lager-Orte ohne eigenen Warteplatz
 const ZONEN = [['116C-VB','Vorb. Beizen'],['116C-PU','Puffer'],['116C-SH','Shiner'],['116C-L1','Lager 1']];
 const HR = ['HRE1','HRE2','HRF1','HRF2','HRG1','HRG2','HRG3'];
 const EXTN = {A:14,B:12,C:9,D:8,E:6,F:6,G:12,H:6};
@@ -687,7 +688,8 @@ const SHEETS={
     let body='';
     if(d.tab==='INT'){
       body+=`<div class="seg">${['Prozess','Lager','Hochregal'].map(s=>`<button data-act="ortSub" data-v="${s}" aria-pressed="${d.sub===s}">${s}</button>`).join('')}</div>`;
-      if(d.sub==='Prozess') body+=`<div class="keys c4 proz">${PROZ.map(p=>`<button data-act="pickOrt" data-v="INT ${p[0]}"><span class="k">${p[0]}</span><span class="d">${esc(p[1])}</span></button>`).join('')}</div>
+      if(d.sub==='Prozess') body+=`<div class="seg"><button data-act="ortW" data-v="0" aria-pressed="${!d.w}">in Bearbeitung</button><button data-act="ortW" data-v="1" aria-pressed="${!!d.w}">wartet hier (Lager -W)</button></div>
+        <div class="keys c4 ${d.w?'lagi':'proz'}">${PROZ.filter(p=>!d.w||!NOW_W.includes(p[0])).map(p=>{const c=p[0]+(d.w?'-W':'');return `<button data-act="pickOrt" data-v="INT ${c}"><span class="k">${c}</span><span class="d">${esc(d.w?'Lager '+p[1]:p[1])}</span></button>`;}).join('')}${d.w?`<button data-act="pickOrt" data-v="INT RO/LS-W"><span class="k">RO/LS-W</span><span class="d">Lager zw. RO und LS</span></button>`:''}</div>
         <div class="eyebrow">Zonen 116c</div><div class="keys c4 proz">${ZONEN.map(p=>`<button data-act="pickOrt" data-v="ZONE ${p[0]}"><span class="k">${p[0].slice(5)}</span><span class="d">${esc(p[1])}</span></button>`).join('')}</div>`;
       if(d.sub==='Hochregal') body+=`<div class="keys c4 lagi">${HR.map(h=>`<button data-act="pickOrt" data-v="INT ${h}"><span class="k">${h}</span></button>`).join('')}</div>`;
       if(d.sub==='Lager'){
@@ -906,7 +908,7 @@ function verfCount(r){ const all=allTracked(); if(!all.length) return ''; const 
 function homeHTML(){
   const runs=[...S.rundgaenge].sort((a,b)=>b.start-a.start);
   return `<main class="wrap" style="padding-top:18px">
-    <div><div class="eyebrow">Materialfluss Ist-Aufnahme · alle Projekte</div><h1>Scan-Rundgang</h1><div class="muted" style="font-size:13px">Version 16.8 · 16.11.2026 · Suchleiste: Foto / Live / RMNr / OK in einer Zeile, Kurzleiste unten entfernt (ohne Et. / Fremd in der Einheit) · Gamme: PF6 Schleifen Pflicht, SAB 100-8 / 110-10 Kanten groß, P30963 205-2 + Prägen · 170-3: + 0160 · neu: Schrägstützen 100-16 / 110-16 enden nach Kanten klein (nicht verpackt) · SAB 110-1 / 110-8 mit Schweißen längs (LS, 0120) vor Zusammenbau · nur Leitteil verfolgt (250-TW5.2 nicht mehr), + 275-T11.1, 250-TW5.1, SAB 170-3 / 110-15, P30963 205-2 statt 200-2, Baugruppen 180 / 840, Regel R9 · P30963-MZB Lemgo (Gamme je Teil, Baugruppen) · PF6: Schleifen optional · Gamme für jedes verfolgte Teil, Ersatzteile 09.11. (400-TR3, 250-TW3.1, 100-S06)</div></div>
+    <div><div class="eyebrow">Materialfluss Ist-Aufnahme · alle Projekte</div><h1>Scan-Rundgang</h1><div class="muted" style="font-size:13px">Version 16.9 · 17.11.2026 · Prozess-Orte mit Warteplatz (-W, „wartet hier“) + RO/LS-W · Suchleiste: Foto / Live / RMNr / OK in einer Zeile, Kurzleiste unten entfernt (ohne Et. / Fremd in der Einheit) · Gamme: PF6 Schleifen Pflicht, SAB 100-8 / 110-10 Kanten groß, P30963 205-2 + Prägen · 170-3: + 0160 · neu: Schrägstützen 100-16 / 110-16 enden nach Kanten klein (nicht verpackt) · SAB 110-1 / 110-8 mit Schweißen längs (LS, 0120) vor Zusammenbau · nur Leitteil verfolgt (250-TW5.2 nicht mehr), + 275-T11.1, 250-TW5.1, SAB 170-3 / 110-15, P30963 205-2 statt 200-2, Baugruppen 180 / 840, Regel R9 · P30963-MZB Lemgo (Gamme je Teil, Baugruppen) · PF6: Schleifen optional · Gamme für jedes verfolgte Teil, Ersatzteile 09.11. (400-TR3, 250-TW3.1, 100-S06)</div></div>
     ${storageOk?'':`<div class="banner err">Speicher im Browser nicht verfügbar. Nach jedem Rundgang exportieren.</div>`}
     <button class="primary" data-act="newRun" style="min-height:56px;font-size:19px">Neuer Rundgang</button>
     ${(()=>{ const n=abwOpenCount(); return `<button data-act="abwList">Abweichungen zur Gamme${n?' · '+n+' offen':''}</button>`; })()}
@@ -960,6 +962,7 @@ document.addEventListener('click',async e=>{
     case 'editOrt': S.cur={...S.cur,oid:b.dataset.o}; openSheet('ort',{edit:b.dataset.o}); break;
     case 'ortTab': sheetData.tab=v; sheetData.reihe=null; renderSheet(); break;
     case 'ortSub': sheetData.sub=v; renderSheet(); break;
+    case 'ortW': sheetData.w=(v==='1'); renderSheet(); break;
     case 'ortReihe': sheetData.reihe=v; renderSheet(); break;
     case 'ortZw': sheetData.zw=!sheetData.zw; renderSheet(); break;
     case 'pickNeu': { const t=$('#neuOrt').value.trim(); if(!t){ toast('Ort beschreiben.','err'); return; } pickOrt('NEU '+t); break; }
